@@ -150,6 +150,10 @@ export default function Client() {
     // useColor("#fff");
   };
 
+  useEffect(() => {
+    cleanData();
+  }, [selectedDate]);
+
   const getTileClassName = ({ date, view }: { date: Date; view: string }) => {
     if (view !== "month") return null;
 
@@ -239,9 +243,9 @@ export default function Client() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.user?.accessToken}`,
           },
           body: JSON.stringify({
-            user: 2,
             date: formattedDate,
             start_time: startTime,
             end_time: endTime,
@@ -298,6 +302,7 @@ export default function Client() {
           method: "delete",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.user?.accessToken}`,
           },
         }
       );

@@ -1,30 +1,46 @@
-import NextAuth from "next-auth";
-
-import { cookies } from "next/headers";
+import NextAuth, { type NextAuthOptions } from "next-auth";
 
 import KakaoProvider from "next-auth/providers/kakao";
 import GoogleProvider from "next-auth/providers/google";
 import NaverProvider from "next-auth/providers/naver";
 
-import { signIn } from "next-auth/react";
-
 import { JWT } from "next-auth/jwt";
 
-interface ApiResponse {
-  message: "SUCCESS" | "UPDATE-TRAINER" | "UPDATE-USER";
-  redirect_url: string;
-  access_token: string;
-  refresh_token: string;
-  user_id: number;
-}
-
-interface CustomToken extends JWT {
+interface User {
+  id: string;
+  name?: string | null;
+  email: string;
+  image?: string | null;
   accessToken?: string;
   refreshToken?: string;
-  expiresAt?: number;
+  accessTokenExpires?: number;
 }
 
-const handler = NextAuth({
+interface Account {
+  provider: string;
+}
+
+interface SignInParams {
+  user: User;
+  account: Account | null;
+}
+
+interface Session {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    accessToken?: string;
+  };
+  expires: string;
+}
+
+interface ExtendedJWT extends JWT {
+  accessToken?: string;
+  refreshToken?: string;
+  accessTokenExpires?: number;
+}
+
+export const authOptions: NextAuthOptions = {
   providers: [
     KakaoProvider({
       clientId: process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || "",
@@ -49,16 +65,14 @@ const handler = NextAuth({
   session: {
     strategy: "jwt",
   },
-  jwt: {
-    secret: "secret",
-  },
+  secret: process.env.NEXT_PUBLIC_NEXTAUTH_SECRET,
   pages: {
-    signIn: "/login",
+    signIn: "/schedule",
   },
 
   callbacks: {
     // 로그인 시, accessToken과 refreshToken을 JWT에 저장
-    async signIn({ user, account }) {
+    async signIn({ user, account }: SignInParams) {
       try {
         // 이메일과 프로바이더를 서버로 보내서 로그인 처리
         const res = await fetch(
@@ -91,14 +105,22 @@ const handler = NextAuth({
         return false; // 로그인 실패
       }
     },
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({
+      token,
+      user,
+      account,
+    }: {
+      token: ExtendedJWT;
+      user: User;
+      account?: Account | null;
+    }) {
+      if (user && account) {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.accessTokenExpires = user.accessTokenExpires;
       }
 
-      if (Date.now() > token.accessTokenExpires) {
+      if (token.accessTokenExpires && Date.now() > token.accessTokenExpires) {
         console.log("Refresh Token:", token.refreshToken);
         try {
           const res = await fetch(
@@ -113,24 +135,30 @@ const handler = NextAuth({
               }),
             }
           );
+
           const data = await res.json();
           token.accessToken = data.access;
           token.accessTokenExpires = Date.now() + 60 * 60 * 1000;
           return token;
         } catch (error) {
           console.error("Error during sign in:", error);
-          return false; // 로그인 실패
+          return {}; // 로그인 실패
         }
       }
       return token;
     },
 
     // 세션에 토큰 저장
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: any }) {
+      if (!session.user) {
+        session.user = {};
+      }
       session.user.accessToken = token.accessToken;
       return session;
     },
   },
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

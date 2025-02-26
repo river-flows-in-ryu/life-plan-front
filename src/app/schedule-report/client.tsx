@@ -53,20 +53,35 @@ export default function Client() {
   };
 
   useEffect(() => {
+    if (!session) return;
     const categoryUsageData = async () => {
       const startDate = dayjs(selectedDate?.[0]).format("YYYY-MM-DD");
       const endDate = dayjs(selectedDate?.[1]).format("YYYY-MM-DD");
 
-      let categoryUrl = `${process.env.NEXT_PUBLIC_API_URL}/plans/dashboard/category-time/?userId=2&period=${periodType}`;
+      let categoryUrl = `${process.env.NEXT_PUBLIC_API_URL}/plans/dashboard/category-time/?period=${periodType}`;
 
-      let importantPlanUrl = `${process.env.NEXT_PUBLIC_API_URL}/plans/important_plan/?userId=2&period=${periodType}`;
+      let importantPlanUrl = `${process.env.NEXT_PUBLIC_API_URL}/plans/important_plan/?period=${periodType}`;
 
       if (periodType === "custom" && startDate && endDate) {
         categoryUrl += `&start_date=${startDate}&end_date=${endDate}`;
         importantPlanUrl += `&start_date=${startDate}&end_date=${endDate}`;
       }
-      const categoryRes = await fetch(categoryUrl);
-      const importantPlanRes = await fetch(importantPlanUrl);
+      const categoryRes = await fetch(categoryUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.user?.accessToken}`, // Bearer token 추가
+        },
+        credentials: "include",
+      });
+      const importantPlanRes = await fetch(importantPlanUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.user?.accessToken}`, // Bearer token 추가
+        },
+        credentials: "include",
+      });
 
       const cateogyResJson = await categoryRes?.json();
       const importantPlanResJson = await importantPlanRes?.json();
@@ -76,13 +91,13 @@ export default function Client() {
       setNextImportantPlans(importantPlanResJson?.next_important_plans);
     };
     categoryUsageData();
-  }, [periodType, selectedDate?.[0], selectedDate?.[1]]);
+  }, [periodType, selectedDate?.[0], selectedDate?.[1], session]);
 
   return (
     <div className="p-4 bg-[#f3f4f6]">
       <Link href="/schedule">일정 추가</Link>
       <h1 className="font-bold text-2xl mb-5">Lifestyle Dashboard</h1>
-      <div className="flex h-8">
+      <div className="flex h-8  border-b-[1px] ">
         <button
           onClick={() => setPeriodType("week")}
           className={`flex-1 ${periodType === "week" ? "bg-white" : ""}`}
