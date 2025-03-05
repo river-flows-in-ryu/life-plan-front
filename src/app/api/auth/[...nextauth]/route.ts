@@ -40,7 +40,7 @@ interface ExtendedJWT extends JWT {
   accessTokenExpires?: number;
 }
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     KakaoProvider({
       clientId: process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || "",
@@ -72,8 +72,13 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     // 로그인 시, accessToken과 refreshToken을 JWT에 저장
-    async signIn({ user, account }: SignInParams) {
+    async signIn(params) {
+      const { user, account } = params;
       try {
+        if (!user?.email) {
+          console.error("Email is required for login");
+          return false;
+        }
         // 이메일과 프로바이더를 서버로 보내서 로그인 처리
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/accounts/`,
@@ -96,31 +101,30 @@ export const authOptions: NextAuthOptions = {
         }
 
         // 로그인 성공 시 accessToken과 refreshToken을 반환
-        user.accessToken = data.accessToken;
-        user.refreshToken = data.refreshToken;
-        user.accessTokenExpires = Date.now() + 60 * 60 * 1000;
-        return user;
+        if (user) {
+          user.accessToken = data.accessToken;
+          user.refreshToken = data.refreshToken;
+          user.accessTokenExpires = Date.now() + 60 * 60 * 1000;
+        }
+        return true;
       } catch (error) {
         console.error("Error during sign in:", error);
         return false; // 로그인 실패
       }
     },
-    async jwt({
-      token,
-      user,
-      account,
-    }: {
-      token: ExtendedJWT;
-      user: User;
-      account?: Account | null;
-    }) {
+    async jwt(params) {
+      const { token, user, account } = params;
+
       if (user && account) {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.accessTokenExpires = user.accessTokenExpires;
       }
 
-      if (token.accessTokenExpires && Date.now() > token.accessTokenExpires) {
+      if (
+        typeof token.accessTokenExpires === "number" &&
+        Date.now() > token.accessTokenExpires
+      ) {
         console.log("Refresh Token:", token.refreshToken);
         try {
           const res = await fetch(

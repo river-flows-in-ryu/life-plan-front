@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/ko";
 import Calendar from "react-calendar";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import WeeklyUsageAnalysisChart from "@/components/schedule-report/weeklyUsageAnalysisChart";
 import CategoryUsageAnalysisChart from "@/components/schedule-report/categoryUsageAnalysisChart";
@@ -14,7 +15,7 @@ import ImportantPlansComponent from "@/components/schedule-report/importantPlans
 
 import "../../styles/calendar.css";
 
-import { CategoryData, Plan } from "@/types/plan";
+import { CategoryData } from "@/types/plan";
 
 import { useSession } from "next-auth/react";
 
@@ -32,7 +33,17 @@ interface CategoryUsageData {
 }
 
 export default function Client() {
-  const [periodType, setPeriodType] = useState("week");
+  const searchParmas = useSearchParams();
+  const urlPeriod = searchParmas.get("period") || "week";
+
+  const urlStartDate = searchParmas.get("startDate")
+    ? new Date(searchParmas.get("startDate")!)
+    : null;
+  const urlEndDate = searchParmas.get("endDate")
+    ? new Date(searchParmas.get("endDate")!)
+    : null;
+
+  const [periodType, setPeriodType] = useState(urlPeriod);
 
   const [selectedDate, setSelectedDate] = useState<[Date, Date] | null>(null);
 
@@ -42,15 +53,28 @@ export default function Client() {
   const [currentImportantPlans, setCurrentImportantPlans] = useState([]);
   const [nextImportantPlans, setNextImportantPlans] = useState([]);
 
+  const router = useRouter();
+
   const { data: session } = useSession();
-  // console.log("프론트에서" + session);
-  console.log(session);
 
   const periodMap: PeriodObject = {
     week: "주",
     month: "월",
     custom: "사용자 지정 기",
   };
+
+  useEffect(() => {
+    setPeriodType(urlPeriod);
+  }, [urlPeriod]);
+
+  useEffect(() => {
+    const startDate = searchParmas.get("startDate");
+    const endDate = searchParmas.get("endDate");
+
+    if (startDate && endDate) {
+      setSelectedDate([new Date(startDate), new Date(endDate)]);
+    }
+  }, [selectedDate]);
 
   useEffect(() => {
     if (!session) return;
@@ -91,7 +115,18 @@ export default function Client() {
       setNextImportantPlans(importantPlanResJson?.next_important_plans);
     };
     categoryUsageData();
-  }, [periodType, selectedDate?.[0], selectedDate?.[1], session]);
+  }, [periodType, selectedDate?.[0], selectedDate?.[1], session, selectedDate]);
+
+  const updatePeriod = (period: string) => {
+    setPeriodType(period);
+    const params = new URLSearchParams(searchParmas.toString());
+    if (period !== "custom") {
+      params.delete("startDate");
+      params.delete("endDate");
+    }
+    params.set("period", period);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   return (
     <div className="p-4 bg-[#f3f4f6]">
@@ -99,19 +134,19 @@ export default function Client() {
       <h1 className="font-bold text-2xl mb-5">Lifestyle Dashboard</h1>
       <div className="flex h-8  border-b-[1px] ">
         <button
-          onClick={() => setPeriodType("week")}
+          onClick={() => updatePeriod("week")}
           className={`flex-1 ${periodType === "week" ? "bg-white" : ""}`}
         >
           주간
         </button>
         <button
-          onClick={() => setPeriodType("month")}
+          onClick={() => updatePeriod("month")}
           className={`flex-1 ${periodType === "month" ? "bg-white" : ""}`}
         >
           월간
         </button>
         <button
-          onClick={() => setPeriodType("custom")}
+          onClick={() => updatePeriod("custom")}
           className={`flex-1 ${periodType === "custom" ? "bg-white" : ""}`}
         >
           사용자지정
@@ -127,6 +162,7 @@ export default function Client() {
           formatDay={(locale, date) =>
             date.toLocaleString("en", { day: "numeric" })
           }
+          value={selectedDate}
         />
       )}
       <div className="flex flex-col sm:flex-row gap-4 flex-wrap ">
