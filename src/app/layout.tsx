@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import AuthContainer from "@/components/authContainer";
+import PushContainer from "@/components/pushContainer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +34,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen`}
       >
         <AuthContainer>
-          <div className="sm:max-w-[1050px] mx-auto">{children}</div>
+          <PushContainer>
+            <div className="sm:max-w-[1050px] mx-auto">{children}</div>
+          </PushContainer>
         </AuthContainer>
       </body>
     </html>
