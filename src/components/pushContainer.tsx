@@ -1,7 +1,7 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import React, { useEffect } from "react";
+import urlBase64ToUint8Array from "@/utils/push";
+import React, { useEffect, useState } from "react";
 
 import { Suspense } from "react";
 
@@ -9,119 +9,118 @@ interface Props {
   children: React.ReactNode;
 }
 
-// const askNotificationPermission = async () => {
-//   const permission = await Notification.requestPermission();
-//   if (permission === "granted") {
-//     const registrations = await navigator.serviceWorker.ready;
-//     const pushSubscription = await registrations.pushManager.subscribe({
-//       userVisibleOnly: true,
-//       applicationServerKey: urlBase64ToUint8Array(
-//         process.env.NEXT_PUBLIC_PUSH_NOTIFICATION_KEY || ""
-//       ),
-//     });
-//     await savePushSubscription(pushSubscription);
-//   }
-// };
-
-// const savePushSubscription = async (subscription: PushSubscription) => {
-//   const res = await fetch(
-//     `${process.env.NEXT_PUBLIC_API_URL}/push-notifications`,
-//     {
-//       method: "POST",
-//       body: JSON.stringify({ subscription }),
-//       headers: { "Content-Type": "application/json" },
-//     }
-//   );
-//   const data = await res.json();
-//   if (data.success) {
-//     console.log("푸시 구독 저장 성공!");
-//   } else {
-//     console.error("푸시 구독 저장 실패");
-//   }
-// };
-
-// function urlBase64ToUint8Array(base64String: string) {
-//   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-//   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-//   const rawData = atob(base64);
-//   const outputArray = new Uint8Array(rawData.length);
-//   for (let i = 0; i < rawData.length; ++i) {
-//     outputArray[i] = rawData.charCodeAt(i);
-//   }
-//   return outputArray;
-// }
-
 export default function PushContainer({ children }: Props) {
-  const { data: session } = useSession();
+  const [isServiceWorkerRegistered, setIsServiceWorkerRegistered] =
+    useState(false);
+  const [subscription, setSubscription] = useState<PushSubscription | null>(
+    null
+  );
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js") // sw.js 경로 설정
-        .then((registration) => {
-          console.log("Service Worker 등록 성공:", registration);
-        })
-        .catch((error) => {
-          console.error("Service Worker 등록 실패:", error);
-        });
-    } else {
-      console.log("이 브라우저는 서비스 워커를 지원하지 않습니다.");
-    }
+    const registerWorkers = async () => {
+      if ("serviceWorker" in navigator) {
+        try {
+          // 서비스 워커 등록
+          await navigator.serviceWorker.register("/sw.js");
+          await navigator.serviceWorker.register("/worker/index.js");
+
+          setIsServiceWorkerRegistered(true);
+        } catch (error) {
+          console.error("SW 등록 실패:", error);
+        }
+      } else {
+        console.log("서비스 워커를 지원하지 않는 브라우저입니다.");
+      }
+    };
+
+    registerWorkers();
   }, []);
 
-  // useEffect(() => {
-  //   if (Boolean(session)) {
-  //     askNotificationPermission();
-  //   }
-  // }, [session]);
+  useEffect(() => {
+    if (!isServiceWorkerRegistered) return;
 
-  const sendTestPushNotification = async () => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/send-push/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
+    const initializePushNotification = async () => {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          console.log("알림 권한이 거부되었습니다.");
+          return;
+        }
 
-    const data = await res.json();
-    if (data.success) {
-      console.log("푸시 알림 전송 성공!");
-    } else {
-      console.error("푸시 알림 전송 실패");
+        const registration = await navigator.serviceWorker.ready;
+        const existingSubscription =
+          await registration.pushManager.getSubscription();
+
+        if (existingSubscription) {
+          console.log("기존 구독이 존재합니다.");
+          setSubscription(existingSubscription);
+          return;
+        }
+
+        const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+        const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
+        const newSubscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedVapidKey,
+        });
+
+        await sendSubscriptionToServer(newSubscription);
+        setSubscription(newSubscription);
+        console.log("푸시 알림 구독이 완료되었습니다.");
+      } catch (error) {
+        console.error("푸시 알림 초기화 중 오류 발생:", error);
+      }
+    };
+    initializePushNotification();
+  }, [isServiceWorkerRegistered]);
+
+  const sendSubscriptionToServer = async (subscription: PushSubscription) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/push/subscribe/`,
+        {
+          method: "post",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(subscription),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("구독 정보 전송 실패");
+      }
+    } catch (error) {
+      console.error("서버 전송 중 오류:", error);
     }
   };
 
-  useEffect(() => {
-    // 서비스 워커 등록 확인
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js") // sw.js 파일 경로
-        .then((registration) => {
-          console.log("Service Worker 등록 성공:", registration);
-        })
-        .catch((error) => {
-          console.error("Service Worker 등록 실패:", error);
-        });
-    } else {
-      console.log("이 브라우저는 서비스 워커를 지원하지 않습니다.");
+  async function testServiceWorkerNotification() {
+    // 권한 확인
+    if (Notification.permission !== "granted") {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        console.log("알림 권한이 거부되었습니다");
+        return;
+      }
     }
 
-    // 푸시 알림 권한 확인
-    if (Notification.permission !== "granted") {
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted") {
-          console.log("알림 권한이 허용되었습니다.");
-        } else {
-          console.log("알림 권한이 거부되었습니다.");
-        }
+    if ("serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      registration.showNotification("테스트 알림", {
+        body: "서비스 워커를 통한 로컬 알림입니다.",
+        icon: "/logo/logo-192.png",
       });
     }
-  }, []);
+  }
 
   return (
     //
     <div>
       <Suspense>
-        <button onClick={sendTestPushNotification}>
-          테스트 푸시 알림 보내기
+        {/* <button onClick={triggerPush}>테스트 푸시 알림 보내기</button> */}
+        <button onClick={testServiceWorkerNotification}>
+          푸시 알림 보내기
         </button>
         {children}
       </Suspense>
