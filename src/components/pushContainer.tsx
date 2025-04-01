@@ -41,51 +41,55 @@ export default function PushContainer({ children }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!isServiceWorkerRegistered) return;
+    if (!isServiceWorkerRegistered || !session) return;
 
     const initializePushNotification = async () => {
-      if (session) {
-        try {
-          const permission = await Notification.requestPermission();
-          if (permission !== "granted") {
-            return;
-          }
+      try {
+        // 1 알림 권한 요청
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
 
-          const registration = await navigator.serviceWorker.ready;
-          const existingSubscription =
-            await registration.pushManager.getSubscription();
+        // 2 서비스 워커 준비 확인
+        const registeration = await navigator.serviceWorker.ready;
 
-          const serverSubscription = await fetchServerSubscription();
+        // 3 브라우저의 현재 구독 정보 확인
+        const browserSubscription =
+          await registeration.pushManager.getSubscription();
 
-          //브라우저에 구독 정보 존재여부
-          if (existingSubscription) {
-            // 서버에 구독 정보 존재여부
-            if (serverSubscription) {
-              // 브라우저와 서버 구독 정보가 다를때
-              if (
-                existingSubscription.endpoint !== serverSubscription.endpoint
-              ) {
-                await existingSubscription.unsubscribe();
-                const newSubscription = await createNewSubscription(
-                  registration
-                );
-                await sendSubscriptionToServer(newSubscription);
-                setSubscription(newSubscription);
-              } else {
-                setSubscription(existingSubscription);
-              }
+        // 4 서버에 저장된 구독 정보 확인
+        const serverSubscription = await fetchServerSubscription();
+
+        // Case 1: 브라우저에 구독 정보가 있는 경우
+        if (browserSubscription) {
+          // Case 1-1: 서버에도 구독 정보가 있는 경우
+          if (serverSubscription) {
+            // 엔드포인트 비교하여 다른 경우 => 새로운 구독 생성 필요
+            if (browserSubscription.endpoint !== serverSubscription) {
+              await browserSubscription.unsubscribe();
+              const newSubscription = await createNewSubscription(
+                registeration
+              );
+              await sendSubscriptionToServer(newSubscription);
+              setSubscription(newSubscription);
             } else {
-              await sendSubscriptionToServer(existingSubscription);
-              setSubscription(existingSubscription);
+              // 엔드포인트가 같은 경우 => 기존 구독 유지
+              setSubscription(browserSubscription);
             }
-          } else {
-            const newSubscription = await createNewSubscription(registration);
-            await sendSubscriptionToServer(newSubscription);
-            setSubscription(newSubscription);
           }
-        } catch (error) {
-          console.error("푸시 알림 초기화 중 오류 발생:", error);
+          // Case 1-2: 서버에 구독 정보가 없는 경우
+          else {
+            await sendSubscriptionToServer(browserSubscription);
+            setSubscription(browserSubscription);
+          }
         }
+        // Case 2: 브라우저에 구독 정보가 없는 경우
+        else {
+          const newSubscription = await createNewSubscription(registeration);
+          await sendSubscriptionToServer(newSubscription);
+          setSubscription(newSubscription);
+        }
+      } catch (error) {
+        console.error(error);
       }
     };
     initializePushNotification();
@@ -107,7 +111,7 @@ export default function PushContainer({ children }: Props) {
       if (!response.ok) {
         throw new Error("구독 정보 전송 실패");
       }
-      const data = await response.json();
+      return await response.json();
     } catch (error) {
       console.error("서버 전송 중 오류:", error);
     }
@@ -148,22 +152,15 @@ export default function PushContainer({ children }: Props) {
   };
 
   async function testServiceWorkerNotification() {
-    // 권한 확인
-    if (Notification.permission !== "granted") {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        console.log("알림 권한이 거부되었습니다");
-        return;
-      }
-    }
-
-    if ("serviceWorker" in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      registration.showNotification("테스트 알림", {
-        body: "서비스 워커를 통한 로컬 알림입니다.",
-        icon: "/logo/logo-192.png",
-      });
-    }
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/test-push/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => console.log("푸시 테스트 결과:", data))
+      .catch((error) => console.error("푸시 테스트 실패:", error));
   }
 
   return (
