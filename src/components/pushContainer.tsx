@@ -25,8 +25,11 @@ export default function PushContainer({ children }: Props) {
       if ("serviceWorker" in navigator) {
         try {
           // 서비스 워커 등록
+          await navigator.serviceWorker.register("/worker/index.js", {
+            scope: "/worker/",
+          });
+
           await navigator.serviceWorker.register("/sw.js");
-          await navigator.serviceWorker.register("/worker/index.js");
 
           setIsServiceWorkerRegistered(true);
         } catch (error) {
@@ -45,46 +48,40 @@ export default function PushContainer({ children }: Props) {
 
     const initializePushNotification = async () => {
       try {
-        // 1 알림 권한 요청
+        // 1. 알림 권한 요청
         const permission = await Notification.requestPermission();
         if (permission !== "granted") return;
 
-        // 2 서비스 워커 준비 확인
-        const registeration = await navigator.serviceWorker.ready;
+        // 2. 🚀 푸시 알림 서비스워커를 명확하게 가져오기
+        const registration = await getWorkerRegistration();
+        if (!registration) {
+          console.error("푸시 알림용 서비스워커가 등록되지 않았습니다.");
+          return;
+        }
 
-        // 3 브라우저의 현재 구독 정보 확인
+        // 3. 브라우저의 현재 구독 정보 확인
         const browserSubscription =
-          await registeration.pushManager.getSubscription();
+          await registration.pushManager.getSubscription();
 
-        // 4 서버에 저장된 구독 정보 확인
+        // 4. 서버에 저장된 구독 정보 확인
         const serverSubscription = await fetchServerSubscription();
 
-        // Case 1: 브라우저에 구독 정보가 있는 경우
         if (browserSubscription) {
-          // Case 1-1: 서버에도 구독 정보가 있는 경우
           if (serverSubscription) {
-            // 엔드포인트 비교하여 다른 경우 => 새로운 구독 생성 필요
             if (browserSubscription.endpoint !== serverSubscription) {
               await browserSubscription.unsubscribe();
-              const newSubscription = await createNewSubscription(
-                registeration
-              );
+              const newSubscription = await createNewSubscription(registration);
               await sendSubscriptionToServer(newSubscription);
               setSubscription(newSubscription);
             } else {
-              // 엔드포인트가 같은 경우 => 기존 구독 유지
               setSubscription(browserSubscription);
             }
-          }
-          // Case 1-2: 서버에 구독 정보가 없는 경우
-          else {
+          } else {
             await sendSubscriptionToServer(browserSubscription);
             setSubscription(browserSubscription);
           }
-        }
-        // Case 2: 브라우저에 구독 정보가 없는 경우
-        else {
-          const newSubscription = await createNewSubscription(registeration);
+        } else {
+          const newSubscription = await createNewSubscription(registration);
           await sendSubscriptionToServer(newSubscription);
           setSubscription(newSubscription);
         }
@@ -92,8 +89,15 @@ export default function PushContainer({ children }: Props) {
         console.error(error);
       }
     };
+
     initializePushNotification();
   }, [isServiceWorkerRegistered, session]);
+
+  // 🚀 푸시 알림 서비스워커를 정확히 가져오는 함수
+  const getWorkerRegistration = async () => {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    return registrations.find((reg) => reg.scope.endsWith("/worker/"));
+  };
 
   const sendSubscriptionToServer = async (subscription: PushSubscription) => {
     try {
@@ -108,6 +112,30 @@ export default function PushContainer({ children }: Props) {
           body: JSON.stringify(subscription),
         }
       );
+
+      if (response.status === 410) {
+        const registration = await getWorkerRegistration();
+        if (!registration) throw new Error("푸시 알림용 SW가 등록되지 않음");
+
+        const newSubscription = await createNewSubscription(registration);
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/push/subscribe/`,
+          {
+            method: "post",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.user?.accessToken}`,
+            },
+            body: JSON.stringify(subscription),
+          }
+        );
+        if (!response.ok) throw new Error("새로운 구독 전송 실패");
+
+        setSubscription(newSubscription);
+        return newSubscription;
+      }
+
       if (!response.ok) {
         throw new Error("구독 정보 전송 실패");
       }
@@ -133,7 +161,7 @@ export default function PushContainer({ children }: Props) {
       }
       return null;
     } catch (error) {
-      console.error("서버 구독 정보 조회중 오류", error);
+      console.error("서버 구독 정보 조회 중 오류", error);
       return null;
     }
   };
@@ -156,6 +184,7 @@ export default function PushContainer({ children }: Props) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.user?.accessToken}`,
       },
     })
       .then((response) => response.json())

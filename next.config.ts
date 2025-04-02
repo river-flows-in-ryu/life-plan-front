@@ -5,8 +5,8 @@ const withPWA = require("next-pwa")({
   dest: "public",
   register: false,
   skipWaiting: true,
-  // customWorkerDir: "worker",
   runtimeCaching,
+  customWorkerDir: "worker",
   exclude: [
     ({ asset }: { asset: { name: string } }) => {
       if (
