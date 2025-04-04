@@ -18,6 +18,7 @@ export default function Home() {
     setCookie("role", role, { path: "/", maxAge: 3600 });
     signIn(provider, {
       state: role,
+      callbackUrl: `/schedule`,
     });
   };
 
