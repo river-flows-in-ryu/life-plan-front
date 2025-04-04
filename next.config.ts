@@ -20,6 +20,9 @@ const withPWA = require("next-pwa")({
       return false;
     },
   ],
+  fallbacks: {
+    document: "/_offline",
+  },
 });
 
 const nextConfig: NextConfig = {

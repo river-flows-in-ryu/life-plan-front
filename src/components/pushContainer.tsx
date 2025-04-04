@@ -119,7 +119,7 @@ export default function PushContainer({ children }: Props) {
 
         const newSubscription = await createNewSubscription(registration);
 
-        const response = await fetch(
+        const newResponse = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/push/subscribe/`,
           {
             method: "post",
@@ -127,10 +127,10 @@ export default function PushContainer({ children }: Props) {
               "Content-Type": "application/json",
               Authorization: `Bearer ${session?.user?.accessToken}`,
             },
-            body: JSON.stringify(subscription),
+            body: JSON.stringify(newSubscription),
           }
         );
-        if (!response.ok) throw new Error("새로운 구독 전송 실패");
+        if (!newResponse.ok) throw new Error("새로운 구독 전송 실패");
 
         setSubscription(newSubscription);
         return newSubscription;
@@ -166,6 +166,7 @@ export default function PushContainer({ children }: Props) {
     }
   };
 
+  //테스트
   const createNewSubscription = async (
     registration: ServiceWorkerRegistration
   ) => {
@@ -179,27 +180,55 @@ export default function PushContainer({ children }: Props) {
     return newSubscription;
   };
 
-  async function testServiceWorkerNotification() {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/test-push/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.user?.accessToken}`,
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => console.log("푸시 테스트 결과:", data))
-      .catch((error) => console.error("푸시 테스트 실패:", error));
-  }
+  //test
+  // async function testServiceWorkerNotification() {
+  //   try {
+  //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/test-push/`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${session?.user?.accessToken}`,
+  //       },
+  //     });
+
+  //     const data = await res.json();
+
+  //     if (res.status === 410) {
+  //       console.warn("구독이 만료됨. 다시 구독을 시도합니다.");
+
+  //       // 🧩 새로 구독하기
+  //       const registration = await getWorkerRegistration();
+  //       if (!registration) throw new Error("푸시 알림용 SW가 등록되지 않음");
+
+  //       const newSubscription = await createNewSubscription(registration);
+
+  //       // 🔄 서버에 새 구독 정보 전송
+  //       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/push/subscribe/`, {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${session?.user?.accessToken}`,
+  //         },
+  //         body: JSON.stringify(newSubscription),
+  //       });
+
+  //       console.log("재구독 성공! 다시 푸시 요청 가능");
+  //     } else {
+  //       console.log("푸시 테스트 결과:", data);
+  //     }
+  //   } catch (error) {
+  //     console.error("푸시 테스트 실패:", error);
+  //   }
+  // }
 
   return (
     //
     <div>
       <Suspense>
         {/* <button onClick={triggerPush}>테스트 푸시 알림 보내기</button> */}
-        <button onClick={testServiceWorkerNotification}>
+        {/* <button onClick={testServiceWorkerNotification}>
           푸시 알림 보내기
-        </button>
+        </button> */}
         {children}
       </Suspense>
     </div>
