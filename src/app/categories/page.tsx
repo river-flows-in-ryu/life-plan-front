@@ -2,23 +2,26 @@ import Client from "./client";
 
 export default async function Page({}: // searchParams,
 {
-  // searchParams: { category?: string };
+  searchParams: { category?: string };
 }) {
-  // async function categoryFetch() {
-  //   try {
-  //     const res = await fetch(
-  //       `${process.env.NEXT_PUBLIC_API_URL}/plans/categories/`
-  //     );
-  //     const resJson = await res.json();
-  //     return resJson;
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // }
-  // const categoryData = await categoryFetch();
+  async function categoryFetch() {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/plans/categories/`
+      );
+      const resJson = await res.json();
+      return resJson;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  const categoryData = await categoryFetch();
+
+  console.log(categoryData);
   return (
     //
-    <div></div>
-    // <Client categoryData={categoryData}></Client>
+    <div className="h-full">
+      <Client categoryData={categoryData} />
+    </div>
   );
 }
