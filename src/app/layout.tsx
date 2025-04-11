@@ -4,6 +4,7 @@ import "./globals.css";
 
 import AuthContainer from "@/components/authContainer";
 import PushContainer from "@/components/pushContainer";
+import QueryContainer from "@/components/queryContainer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,11 +34,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen`}
       >
-        <AuthContainer>
-          <PushContainer>
-            <div className="sm:max-w-[1050px] mx-auto">{children}</div>
-          </PushContainer>
-        </AuthContainer>
+        <QueryContainer>
+          <AuthContainer>
+            <PushContainer>
+              <div className="sm:max-w-[1050px] mx-auto">{children}</div>
+            </PushContainer>
+          </AuthContainer>
+        </QueryContainer>
       </body>
     </html>
   );
