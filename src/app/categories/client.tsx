@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { memo, useEffect, useMemo, useState } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 
-import { addDays, format, min } from "date-fns";
+import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
@@ -19,6 +22,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+import Modal from "@/components/modal";
+import CategoryChangeModal from "@/components/modals/categoryChangeModal";
+
+import editImg from "../../../public/edit.png";
+import searchImg from "../../../public/searchImg.png";
+import closeImg from "../../../public/close.png";
+
+dayjs.extend(customParseFormat);
+
 interface Category {
   id: number;
   name: string;
@@ -26,6 +38,18 @@ interface Category {
 
 interface Props {
   categoryData: Category[];
+}
+
+interface Plan {
+  color: string;
+  date: string;
+  description: string;
+  end_time: string;
+  id: number;
+  is_important: boolean;
+  label: string;
+  start_time: string;
+  user: number;
 }
 
 export default function Client({ categoryData }: Props) {
@@ -36,11 +60,15 @@ export default function Client({ categoryData }: Props) {
 
   const [periodType, setPeriodType] = useState(urlPeriod);
 
-  const [categoryPlans, setCategoryPlans] = useState([]);
+  const [categoryPlans, setCategoryPlans] = useState<Plan[]>([]);
 
   const [totalMinutes, setTotalMinutes] = useState<number>(0);
 
   const [date, setDate] = React.useState<DateRange | undefined>(undefined);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [selectedPlanId, setSeletedPlanId] = useState<number | null>(null);
 
   const { data: session } = useSession();
 
@@ -81,7 +109,6 @@ export default function Client({ categoryData }: Props) {
           },
         });
         const resJson = await res.json();
-        console.log(resJson);
         setCategoryPlans(resJson?.data);
         setTotalMinutes(resJson?.total_minutes);
       } catch (error) {
@@ -103,6 +130,25 @@ export default function Client({ categoryData }: Props) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("category", newCategory);
     router.push(`/categories?${params.toString()}`);
+  };
+
+  const handleClickPlan = (id: number) => {
+    setIsModalOpen(true);
+    setSeletedPlanId(id);
+  };
+
+  const handleClickChangeCategory = () => {
+    let url = `/categories/change?category=${encodeURIComponent(
+      categoryValue
+    )}&period=${periodType}`;
+    if (periodType === "custom" && date?.from && date?.to) {
+      const start = dayjs(date.from).format("YYYY-MM-DD");
+      const end = dayjs(date.to).format("YYYY-MM-DD");
+
+      url += `&start=${start}&end=${end}`;
+    }
+
+    router.push(url);
   };
 
   const HeaderSection = () => {
@@ -136,24 +182,26 @@ export default function Client({ categoryData }: Props) {
       <div className="w-full sm:flex sm:justify-evenly gap-6 mb-6">
         <div className="w-full sm:w-2/3 p-4 flex items-center justify-between border border-[#e5e7eb] rounded sm:mb-0 mb-6">
           <div className="flex justify-around sm:justify-evenly gap-0 sm:gap-8 w-full">
-            <div className="">
+            <div className="text-center">
               <span className="text-sm">총 활동 수</span>
               <p className="text-xl font-bold">
                 {categoryPlans?.length || 0}개
               </p>
             </div>
-            <div>
+            <div className="text-center">
               <span className="text-sm">총 소요 시간</span>
               <p className="text-xl font-bold">
-                {hours}시간 {minutes}분
+                {hours || 0}시간 {minutes || 0}분
               </p>
             </div>
           </div>
-          <Link href={`${changePageUrl}`}>
-            <button className="h-10 w-[130px] bg-black text-white rounded text-sm px-4 py-2 hidden sm:inline-block font-medium">
-              카테고리 변경
-            </button>
-          </Link>
+
+          <button
+            className="h-10 w-[130px] bg-black text-white rounded text-sm px-4 py-2 hidden sm:inline-block font-medium"
+            onClick={handleClickChangeCategory}
+          >
+            카테고리 변경
+          </button>
         </div>
         <div className="w-full sm:w-1/3 p-4 border border-[#e5e7eb] rounded mb-6 sm:mb-0">
           <p className="mb-2 font-bold">다른 카테고리 보기</p>
@@ -180,24 +228,63 @@ export default function Client({ categoryData }: Props) {
     );
   };
 
-  const CategoryItemList = () => {
-    let changePageUrl = `/categories/change?category=${encodeURIComponent(
-      categoryValue
-    )}&period=${periodType}`;
+  const CategoryItemList = memo(() => {
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const filteredPlans = useMemo(() => {
+      if (!searchTerm) return categoryPlans;
+      return categoryPlans?.filter((plan) =>
+        plan.label.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }, [searchTerm, categoryPlans]);
 
     return (
       <>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold flex items-center">활동 내역</h2>
-          <Link href={`${changePageUrl}`}>
-            <button className="h-10 w-[130px] bg-black text-white rounded text-sm px-4 py-2 inline-block sm:hidden font-medium">
-              카테고리 변경
-            </button>
-          </Link>
+          <div className=" w-full flex justify-between">
+            <h2 className="text-lg font-bold flex items-center">활동 내역</h2>
+            <div className="w-full max-w-xs  border border-[#e5e7eb] h-10 rounded relative p-1">
+              <Image
+                className="absolute top-1/2 left-3 transform -translate-y-1/2"
+                src={searchImg}
+                width={16}
+                height={16}
+                alt="flaction_search_img"
+              />
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event?.target?.value)}
+                type="text"
+                className="pl-10 h-8 w-full "
+                placeholder="일정 검색..."
+              />
+
+              {searchTerm !== "" && (
+                <button
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  onClick={() => setSearchTerm("")}
+                >
+                  <Image
+                    className=""
+                    src={closeImg}
+                    alt="flaction_close_img"
+                    width={16}
+                    height={16}
+                  />
+                </button>
+              )}
+            </div>
+          </div>
+          <button
+            className="h-10 w-[130px] bg-black text-white rounded text-sm px-4 py-2 inline-block sm:hidden font-medium"
+            onClick={handleClickChangeCategory}
+          >
+            카테고리 변경
+          </button>
         </div>
         <div
           className={`flex flex-col items-center ${
-            categoryPlans?.length !== 0
+            filteredPlans?.length !== 0
               ? "grid grid-cols-1 sm:grid-cols-3 gap-3 flex-col items-start"
               : ""
           }`}
@@ -209,24 +296,53 @@ export default function Client({ categoryData }: Props) {
                 활동 내역을 확인하려면 날짜가 필요해요.
               </p>
             </div>
-          ) : categoryPlans?.length !== 0 ? (
+          ) : filteredPlans?.length !== 0 ? (
             <>
-              {categoryPlans &&
-                categoryPlans?.map((plan) => {
+              {filteredPlans &&
+                filteredPlans?.map((plan) => {
                   const { id, label, date, start_time, end_time, description } =
                     plan;
+
+                  const start = dayjs(start_time, "HH:mm:ss");
+                  const end = dayjs(end_time, "HH:mm:ss");
+                  const diffMinutes = end.diff(start, "minute");
+
+                  const hours = Math.floor(diffMinutes / 60);
+                  const minutes = diffMinutes % 60;
+
+                  const durationStr =
+                    hours && minutes
+                      ? `${hours}시간 ${minutes}분`
+                      : hours
+                      ? `${hours}시간`
+                      : `${minutes}분`;
                   return (
                     <div
                       key={id}
                       className="p-4 border border-[#e5e7eb] rounded"
                     >
-                      <p className="mb-1 font-medium truncate">{label}</p>
+                      <div className="flex justify-between">
+                        <p className="mb-1 font-medium truncate">{label}</p>
+                        <button
+                          className="p-1 rounded-[50%] bg-gray-100 hover:bg-gray-200 w-8 h-8 "
+                          onClick={() => handleClickPlan(id)}
+                        >
+                          <Image
+                            className="m-auto"
+                            src={editImg}
+                            alt="flaction_edit_img"
+                            width={16}
+                            height={16}
+                          />
+                        </button>
+                      </div>
                       <span className="max-w-[100%] block text-sm truncate">
                         {description}
                       </span>
                       <span className="text-sm">
                         {date} &nbsp;
-                        {start_time} - {end_time}
+                        {start.format("HH:mm")} - {end.format("HH:mm")} (
+                        {durationStr})
                       </span>
                     </div>
                   );
@@ -261,10 +377,18 @@ export default function Client({ categoryData }: Props) {
         </div>
       </>
     );
-  };
+  });
 
   return (
     <div className="w-full h-full p-4 ">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <CategoryChangeModal
+          onClose={() => setIsModalOpen(false)}
+          id={selectedPlanId}
+          plan={categoryPlans?.filter((p) => p.id === selectedPlanId)}
+          categoryData={categoryData}
+        />
+      </Modal>
       <HeaderSection />
       {/* 컴포넌트화 시에 이상행동 */}
       <div
