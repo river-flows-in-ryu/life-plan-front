@@ -137,6 +137,20 @@ export default function Client({ categoryData }: Props) {
     setSeletedPlanId(id);
   };
 
+  const handleClickChangeCategory = () => {
+    let url = `/categories/change?category=${encodeURIComponent(
+      categoryValue
+    )}&period=${periodType}`;
+    if (periodType === "custom" && date?.from && date?.to) {
+      const start = dayjs(date.from).format("YYYY-MM-DD");
+      const end = dayjs(date.to).format("YYYY-MM-DD");
+
+      url += `&start=${start}&end=${end}`;
+    }
+
+    router.push(url);
+  };
+
   const HeaderSection = () => {
     return (
       <div className="sm:flex sm:justify-between mb-0 sm:mb-6 ">
@@ -168,24 +182,26 @@ export default function Client({ categoryData }: Props) {
       <div className="w-full sm:flex sm:justify-evenly gap-6 mb-6">
         <div className="w-full sm:w-2/3 p-4 flex items-center justify-between border border-[#e5e7eb] rounded sm:mb-0 mb-6">
           <div className="flex justify-around sm:justify-evenly gap-0 sm:gap-8 w-full">
-            <div className="">
+            <div className="text-center">
               <span className="text-sm">총 활동 수</span>
               <p className="text-xl font-bold">
                 {categoryPlans?.length || 0}개
               </p>
             </div>
-            <div>
+            <div className="text-center">
               <span className="text-sm">총 소요 시간</span>
               <p className="text-xl font-bold">
                 {hours || 0}시간 {minutes || 0}분
               </p>
             </div>
           </div>
-          <Link href={`${changePageUrl}`}>
-            <button className="h-10 w-[130px] bg-black text-white rounded text-sm px-4 py-2 hidden sm:inline-block font-medium">
-              카테고리 변경
-            </button>
-          </Link>
+
+          <button
+            className="h-10 w-[130px] bg-black text-white rounded text-sm px-4 py-2 hidden sm:inline-block font-medium"
+            onClick={handleClickChangeCategory}
+          >
+            카테고리 변경
+          </button>
         </div>
         <div className="w-full sm:w-1/3 p-4 border border-[#e5e7eb] rounded mb-6 sm:mb-0">
           <p className="mb-2 font-bold">다른 카테고리 보기</p>
@@ -214,10 +230,6 @@ export default function Client({ categoryData }: Props) {
 
   const CategoryItemList = memo(() => {
     const [searchTerm, setSearchTerm] = useState("");
-
-    let changePageUrl = `/categories/change?category=${encodeURIComponent(
-      categoryValue
-    )}&period=${periodType}`;
 
     const filteredPlans = useMemo(() => {
       if (!searchTerm) return categoryPlans;
@@ -263,11 +275,12 @@ export default function Client({ categoryData }: Props) {
               )}
             </div>
           </div>
-          <Link href={`${changePageUrl}`}>
-            <button className="h-10 w-[130px] bg-black text-white rounded text-sm px-4 py-2 inline-block sm:hidden font-medium">
-              카테고리 변경
-            </button>
-          </Link>
+          <button
+            className="h-10 w-[130px] bg-black text-white rounded text-sm px-4 py-2 inline-block sm:hidden font-medium"
+            onClick={handleClickChangeCategory}
+          >
+            카테고리 변경
+          </button>
         </div>
         <div
           className={`flex flex-col items-center ${

@@ -4,6 +4,8 @@ interface FetchCategoryPlansProps {
   category: string | null;
   periodType: string;
   session: Session | null;
+  start?: string;
+  end?: string;
 }
 
 interface ChangePlansCategoryProps {
@@ -15,16 +17,19 @@ export const fetchCategoryPlans = async ({
   category,
   periodType,
   session,
+  start,
+  end,
 }: FetchCategoryPlansProps) => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/plans?category=${category}&period=${periodType}`,
-    {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.user?.accessToken}`,
-      },
-    }
-  );
+  let url = `${process.env.NEXT_PUBLIC_API_URL}/plans?category=${category}&period=${periodType}`;
+  if (periodType === "custom" && start && end) {
+    url += `&start=${start}&end=${end}`;
+  }
+  const res = await fetch(`${url}`, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session?.user?.accessToken}`,
+    },
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch plans: ${res.status}`);
   }

@@ -22,6 +22,11 @@ export default function Client({ categoryData }: Props) {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
 
+  const startDate = searchParams.get("start");
+  const endDate = searchParams.get("end");
+
+  console.log(startDate, endDate);
+
   const urlPeriod = searchParams.get("period") || "week";
 
   const [category, setCategory] = useState<string | null>(
@@ -51,7 +56,15 @@ export default function Client({ categoryData }: Props) {
 
   const { data: categoryPlansData } = useQuery({
     queryKey: ["categoryPlan", session, periodType],
-    queryFn: () => fetchCategoryPlans({ category, periodType, session }),
+    queryFn: () =>
+      fetchCategoryPlans({
+        category,
+        periodType,
+        session,
+        ...(periodType === "custom" && startDate && endDate
+          ? { start: startDate, end: endDate }
+          : {}),
+      }),
     enabled: !!session?.user?.accessToken,
   });
 
@@ -67,28 +80,6 @@ export default function Client({ categoryData }: Props) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("period", type);
     router.push(`/categories/change?${params.toString()}`);
-  };
-
-  const HeaderSection = () => {
-    return (
-      <div className="sm:flex sm:justify-between mb-0 sm:mb-6 w-full sm:w-[400px]">
-        <div className="h-10 p-1 w-full flex bg-[#f3f4f6] sm:mb-0 ">
-          {["week", "month", "custom"].map((type) => (
-            <button
-              key={type}
-              className={`w-1/3 ${
-                periodType === type ? "bg-white font-bold" : ""
-              }`}
-              onClick={() => handlePeriodChange(type)}
-            >
-              {type === "week" && "주간"}
-              {type === "month" && "월간"}
-              {type === "custom" && "사용자지정"}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
   };
 
   const handleClickCheckAll = () => {
@@ -143,9 +134,9 @@ export default function Client({ categoryData }: Props) {
           >
             <input
               type="checkbox"
-              className="w-4 h-4"
+              className="w-4 h-4 cursor-pointer"
               checked={isAllChecked}
-              onChange={handleClickCheckAll}
+              readOnly
             />
             <p className="font-medium text-sm ">전체 선택</p>
           </div>
@@ -153,8 +144,12 @@ export default function Client({ categoryData }: Props) {
             {checkedItems?.length}개 선택됨
           </div>
         </div>
-        <div className="max-h-[400px] overflow-y-auto flex flex-col pr-2 gap-3 p-4 border border-[#e5e7eb]">
-          {categoryPlansData &&
+        <div className="flex flex-col min-h-[200px] sm:h-[400px] overflow-y-auto pr-2 gap-3 p-4 border border-[#e5e7eb]">
+          {!categoryLength || categoryLength === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-gray-500">
+              <p>선택한 기간 동안 등록된 일정이 없어요.</p>
+            </div>
+          ) : (
             categoryPlansData?.data?.map((plan: any) => {
               const {
                 id,
@@ -162,27 +157,39 @@ export default function Client({ categoryData }: Props) {
                 description,
                 date,
                 start_time,
-                end_timem,
+                end_time,
                 is_important,
               } = plan;
               return (
                 <div
-                  className="p-3 flex border border-[#e5e7eb] rounded-md"
+                  className="p-3 flex gap-3 border border-[#e5e7eb] rounded-md cursor-pointer"
                   key={id}
+                  onClick={() => handleClickCheckItem(id)}
                 >
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4"
-                    checked={checkedItems?.includes(id)}
-                    onChange={() => handleClickCheckItem(id)}
-                  />
-                  <div className="ml-3">
-                    <p>{label}</p>
-                    <span className="inline-block-block">{description}</span>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 cursor-pointer"
+                      checked={checkedItems?.includes(id)}
+                      readOnly
+                    />
+                  </div>
+                  <div className=" w-full min-w-0">
+                    <p className=" w-full text-sm font-bold truncate">
+                      {label}
+                    </p>
+                    <span className=" w-full text-xs block truncate ">
+                      {description}
+                    </span>
+                    <span className=" block text-xs">
+                      {date} / {start_time.slice(0, 5)}분 ~{" "}
+                      {end_time.slice(0, 5)}분
+                    </span>
                   </div>
                 </div>
               );
-            })}
+            })
+          )}
         </div>
       </div>
     );
@@ -235,9 +242,6 @@ export default function Client({ categoryData }: Props) {
 
   return (
     <div className="w-full h-full p-4 ">
-      <div className="flex justify-end">
-        <HeaderSection />
-      </div>
       <div className="mx-auto">
         <div className="p-6 ">
           <h1 className="text-xl font-semibold">카테고리 일괄 변경</h1>
@@ -249,10 +253,18 @@ export default function Client({ categoryData }: Props) {
             좌측에서 활동을 선택하고, 우측에서 변경할 카테고리를 선택하세요.
           </span>
         </div>
+        <div className="bg-gray-50 h-10 sm:h-[60px] mb-5 flex justify-center items-center rounded">
+          <p>
+            {periodType === "custom"
+              ? "사용자 지정 기간 일정 내역"
+              : periodType === "week"
+              ? "이번 주 일정 내역"
+              : "이번 달 일정 내역"}
+          </p>
+        </div>
+        <div className=""></div>
         <div className="p-6 border border-[#e5e7eb] rounded-lg">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* <CategoryPlansListComponent />
-            <CategoryListComponent /> */}
             <div className="sm:hidden">
               {step === 1 && <CategoryPlansListComponent />}
               {step === 2 && <CategoryListComponent />}
@@ -266,7 +278,7 @@ export default function Client({ categoryData }: Props) {
               <CategoryListComponent />
             </div>
           </div>
-          <div className="items-center p-6 flex justify-end  pt-6">
+          <div className="items-center p-0 sm:p-6 flex justify-end mt-6">
             {step === 1 && (
               <button
                 className="px-4 py-2 text-sm font-medium border sm:hidden"
@@ -277,8 +289,10 @@ export default function Client({ categoryData }: Props) {
               </button>
             )}
             {step === 2 && (
-              <>
-                <button onClick={() => setStep(1)}>이전</button>
+              <div className="w-full flex gap-2 justify-end">
+                <button onClick={() => setStep(1)} className="border px-4 py-2">
+                  이전
+                </button>
                 <button
                   className="px-4 py-2 text-sm font-medium border sm:hidden"
                   onClick={handleClickChangePlansCategory}
@@ -286,7 +300,7 @@ export default function Client({ categoryData }: Props) {
                 >
                   변경하기 ({checkedItems.length}개 일정)
                 </button>
-              </>
+              </div>
             )}
 
             <button
