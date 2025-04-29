@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { CalendarIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -28,11 +28,30 @@ import {
 import star from "../../../../public/star.png";
 import colorStar from "../../../../public/star-color.png";
 import Image from "next/image";
+import dayjs from "dayjs";
 
 type DayCategory = "weekdays" | "weekend" | "custom";
 
 interface Props {
   categoryData: { id: string; name: string }[];
+}
+
+type Weekday =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+
+interface SampleData {
+  day: string;
+  dayOfTheWeek: Weekday;
+  startTime: string;
+  endTime: string;
+  title: string;
+  isImportant: boolean;
 }
 
 export default function Client({ categoryData }: Props) {
@@ -53,6 +72,69 @@ export default function Client({ categoryData }: Props) {
 
   const [isImportant, setIsImportant] = useState<boolean>(false);
 
+  const [sampleData, setSampleData] = useState<SampleData[]>([]);
+
+  useEffect(() => {
+    if (
+      !date?.from ||
+      !date?.to ||
+      !startTime ||
+      !endTime ||
+      !title ||
+      !selectedCategory
+    )
+      return;
+
+    const start = dayjs(date.from);
+    const end = dayjs(date.to);
+    let current = start;
+
+    const result = [];
+
+    while (current.isSame(end) || current.isBefore(end)) {
+      const day = current.format("dddd").toLowerCase();
+
+      const isWeekday = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+      ].includes(day);
+      const isWeekend = ["saturday", "sunday"].includes(day);
+      const isCustom = selectedWeekdays?.includes(day);
+
+      const shouldInclude =
+        (dayCategory === "weekdays" && isWeekday) ||
+        (dayCategory === "weekend" && isWeekend) ||
+        (dayCategory === "custom" && isCustom);
+
+      if (shouldInclude) {
+        result.push({
+          day: current.format("YYYY-MM-DD"),
+          dayOfTheWeek: current.format("dddd").toLowerCase() as Weekday,
+          startTime: startTime,
+          endTime: endTime,
+          title: title,
+          isImportant: isImportant,
+        });
+      }
+
+      current = current.add(1, "day");
+    }
+
+    setSampleData(result);
+  }, [
+    date,
+    dayCategory,
+    selectedWeekdays,
+    startTime,
+    endTime,
+    title,
+    isImportant,
+    selectedCategory,
+  ]);
+
   const dayCategoryLabel = {
     weekdays: "평일",
     weekend: "주말",
@@ -68,6 +150,16 @@ export default function Client({ categoryData }: Props) {
     { value: "saturday", label: "토" },
     { value: "sunday", label: "일" },
   ];
+
+  const weekdayKoreanMap = {
+    monday: "월요일",
+    tuesday: "화요일",
+    wednesday: "수요일",
+    thursday: "목요일",
+    friday: "금요일",
+    saturday: "토요일",
+    sunday: "일요일",
+  };
 
   const dayCategoryList: DayCategory[] = ["weekdays", "weekend", "custom"];
 
@@ -282,11 +374,16 @@ export default function Client({ categoryData }: Props) {
             </div>
           </div>
           <div>
-            <p></p>
+            <div className="flex justify-between">
+              <p>생성된 일정 미리보기</p>
+              <div className="border rounded-full px-2 py-0.5 text-xs font-semibold">
+                총 {sampleData?.length || 0}개
+              </div>
+            </div>
             <div className="hidden sm:block border rounded">
-              <div className="max-h-[200px]">
+              <div className="max-h-[200px] overflow-auto">
                 <table className="w-full">
-                  <thead className="sticky top-0 h-10">
+                  <thead className="sticky top-0 h-10 bg-white">
                     <tr>
                       <th>날짜</th>
                       <th>요일</th>
@@ -295,7 +392,40 @@ export default function Client({ categoryData }: Props) {
                       <th>중요</th>
                     </tr>
                   </thead>
-                  <tbody></tbody>
+                  <tbody>
+                    {sampleData?.map((sample) => {
+                      const {
+                        dayOfTheWeek,
+                        day,
+                        endTime,
+                        isImportant,
+                        startTime,
+                        title,
+                      } = sample;
+                      return (
+                        <tr
+                          key={`${day}-${dayOfTheWeek}`}
+                          className="text-center border-t h-[45px]"
+                        >
+                          <td>{day}</td>
+                          <td>{weekdayKoreanMap[dayOfTheWeek]}</td>
+                          <td>
+                            {startTime} ~ {endTime}
+                          </td>
+                          <td>{title}</td>
+                          <td className="text-center align-middle">
+                            <div className="flex justify-center items-center h-10">
+                              <Image
+                                src={isImportant ? colorStar : star}
+                                alt="flaction_star_img"
+                                className="w-5 h-5"
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
                 </table>
               </div>
             </div>
