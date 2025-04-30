@@ -57,6 +57,8 @@ interface SampleData {
 export default function Client({ categoryData }: Props) {
   const [date, setDate] = React.useState<DateRange | undefined>(undefined);
 
+  const [open, setOpen] = useState(false);
+
   const [dayCategory, setDayCategory] = useState<DayCategory>("weekdays");
 
   const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>([]);
@@ -73,6 +75,18 @@ export default function Client({ categoryData }: Props) {
   const [isImportant, setIsImportant] = useState<boolean>(false);
 
   const [sampleData, setSampleData] = useState<SampleData[]>([]);
+
+  useEffect(() => {
+    if (!date?.from || !date?.to) return;
+    const start = dayjs(date?.from);
+    const end = dayjs(date?.to);
+
+    const diff = end?.diff(start, "days");
+    if (diff > 31) {
+      alert("한달을 초과할수 없습니다.");
+      setDate(undefined);
+    }
+  }, [date]);
 
   useEffect(() => {
     if (
@@ -182,6 +196,274 @@ export default function Client({ categoryData }: Props) {
     );
   };
 
+  const reset = () => {
+    setDate(undefined);
+    setStartTime("");
+    setEndTime("");
+    setTitle("");
+    setSelectedCategory("");
+    setSelectedColor("");
+    setIsImportant(false);
+    setSampleData([]);
+  };
+
+  const DateRangeSelector = ({
+    date,
+    setDate,
+    open,
+    setOpen,
+  }: {
+    date: DateRange | undefined;
+    setDate: (date: DateRange | undefined) => void;
+    open: boolean;
+    setOpen: (open: boolean) => void;
+  }) => {
+    return (
+      <div className="mb-6">
+        <p className="mb-3 font-medium">기간 설정</p>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              id="date"
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !date && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon />
+              {date?.from ? (
+                date.to ? (
+                  <>
+                    {format(date.from, "y MM dd")} -{" "}
+                    {format(date.to, "y MM dd")}
+                  </>
+                ) : (
+                  format(date.from, "y MM dd")
+                )
+              ) : (
+                <span>Pick a date</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={date?.from}
+              selected={date}
+              onSelect={(range) => {
+                setDate(range);
+                if (range?.from && range?.to) {
+                  setOpen(false); // 완전 선택됐을 때만 닫기
+                }
+              }}
+              numberOfMonths={2}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  };
+
+  const DayPatternSelector = () => {
+    return (
+      <div>
+        <span className="font-medium">반복 패턴</span>
+        <div className="h-10 p-1  w-full flex bg-[#f3f4f6] mb-6 mt-3">
+          {dayCategoryList?.map((type: DayCategory) => (
+            <button
+              key={type}
+              className={`w-1/3 ${
+                dayCategory === type ? "bg-white font-bold" : ""
+              }`}
+              onClick={() => setDayCategory(type)}
+            >
+              {dayCategoryLabel[type]}
+            </button>
+          ))}
+        </div>
+        {dayCategory === "custom" && (
+          <div className="grid grid-cols-5 gap-2 sm:flex sm:gap-5">
+            {weekdays?.map((day: { value: string; label: string }) => {
+              const { value, label } = day;
+              const isSelected = selectedWeekdays?.includes(value);
+              return (
+                <button
+                  key={value}
+                  className={`px-4 py-1.5 rounded ${
+                    isSelected ? "bg-black text-white border-none" : "border"
+                  }`}
+                  onClick={() => handleClickToggleDays(value)}
+                >
+                  <span className="sm:hidden">{label}</span>
+                  <span className="hidden sm:inline">{label}요일</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const TimeRangePicker = () => {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-6">
+        <div className="">
+          <label className="block mb-2 font-medium">시작 시간</label>
+          <input
+            className="border border-[#e5e7eb] w-full h-10 pl-2"
+            type="time"
+            name="appt"
+            min="00:00"
+            max="24:00"
+            onChange={(event) => setStartTime(event?.target.value)}
+            value={startTime}
+          />
+        </div>
+        <div className="">
+          <label className="block mb-2 font-medium">종료 시간</label>
+          <input
+            className="border border-[#e5e7eb] w-full h-10 pl-2"
+            type="time"
+            name="appt"
+            min="00:00"
+            max="24:00"
+            onChange={(event) => setEndTime(event?.target.value)}
+            value={endTime}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const ColorSelector = () => {
+    return (
+      <div className="mt-6">
+        <label className="block mb-2">색상 선택</label>
+        <div className="grid gap-2 grid-cols-5 sm:flex">
+          {colorOptions?.map((colorItem) => {
+            const { id, color } = colorItem;
+            const isSelectedColor = selectedColor === id;
+            return (
+              <button
+                style={{ backgroundColor: color }}
+                key={id}
+                className={` rounded-full w-8 h-8 ${
+                  isSelectedColor ? "border-2 border-black" : ""
+                }`}
+                onClick={() => setSelectedColor(id)}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const ImportantToggle = () => {
+    return (
+      <div className="flex mt-4">
+        <div className="flex-1">
+          <p className="font-medium">중요 일정으로 표시</p>
+          <span className="text-sm">중요 일정은 강조 표시됩니다.</span>
+        </div>
+        <div className="flex gap-2 ml-2">
+          {isImportant ? (
+            <Image
+              src={colorStar}
+              alt="flaction_star_img"
+              className="w-5 h-5"
+            />
+          ) : (
+            <Image src={star} alt="flaction_star_img" className="w-5 h-5" />
+          )}
+          <></>
+          <Switch
+            checked={isImportant}
+            onCheckedChange={() => setIsImportant((prev) => !prev)}
+            className=""
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const SchedulePreviewTable = () => {
+    return (
+      <div className="mt-10">
+        <div className="flex justify-between mb-3">
+          <p className="font-semibold">생성된 일정 미리보기</p>
+          <div className="border rounded-full px-2 py-0.5 text-xs font-semibold">
+            총 {sampleData?.length || 0}개
+          </div>
+        </div>
+        <div className="hidden sm:block border rounded">
+          <div className="max-h-[200px] overflow-auto">
+            <table className="w-full">
+              <thead className="sticky top-0 h-10 bg-gray-100 border-b">
+                <tr>
+                  <th>날짜</th>
+                  <th>요일</th>
+                  <th>시간</th>
+                  <th>제목</th>
+                  <th>중요</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sampleData?.length !== 0 ? (
+                  <>
+                    {sampleData?.map((sample) => {
+                      const {
+                        dayOfTheWeek,
+                        day,
+                        endTime,
+                        isImportant,
+                        startTime,
+                        title,
+                      } = sample;
+                      return (
+                        <tr
+                          key={`${day}-${dayOfTheWeek}`}
+                          className="text-center border-t h-[45px]"
+                        >
+                          <td>{day}</td>
+                          <td>{weekdayKoreanMap[dayOfTheWeek]}</td>
+                          <td>
+                            {startTime} ~ {endTime}
+                          </td>
+                          <td>{title}</td>
+                          <td className="text-center align-middle">
+                            <div className="flex justify-center items-center h-10">
+                              <Image
+                                src={isImportant ? colorStar : star}
+                                alt="flaction_star_img"
+                                className="w-5 h-5"
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <tr>
+                    <td colSpan={5}>
+                      <div className="flex justify-center items-center h-20 text-gray-400">
+                        데이터가 없습니다.
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full h-full p-4 ">
       <h1 className="font-bold text-2xl mb-6 ">반복 일정 생성</h1>
@@ -193,110 +475,14 @@ export default function Client({ categoryData }: Props) {
           </span>
         </div>
         <div className="p-4 ">
-          <div className="mb-6">
-            <p className="mb-3 font-medium">기간 설정</p>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="date"
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon />
-                  {date?.from ? (
-                    date.to ? (
-                      <>
-                        {format(date.from, "y MM dd")} -{" "}
-                        {format(date.to, "y MM dd")}
-                      </>
-                    ) : (
-                      format(date.from, "y MM dd")
-                    )
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={date?.from}
-                  selected={date}
-                  onSelect={setDate}
-                  numberOfMonths={2}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div>
-            <span className="font-medium">반복 패턴</span>
-            <div className="h-10 p-1  w-full flex bg-[#f3f4f6] mb-6 mt-3">
-              {dayCategoryList?.map((type: DayCategory) => (
-                <button
-                  key={type}
-                  className={`w-1/3 ${
-                    dayCategory === type ? "bg-white font-bold" : ""
-                  }`}
-                  onClick={() => setDayCategory(type)}
-                >
-                  {dayCategoryLabel[type]}
-                </button>
-              ))}
-            </div>
-            {dayCategory === "custom" && (
-              <div className="grid grid-cols-5 gap-2 sm:flex sm:gap-5">
-                {weekdays?.map((day: { value: string; label: string }) => {
-                  const { value, label } = day;
-                  const isSelected = selectedWeekdays?.includes(value);
-                  return (
-                    <button
-                      key={value}
-                      className={`px-4 py-1.5 rounded ${
-                        isSelected
-                          ? "bg-black text-white border-none"
-                          : "border"
-                      }`}
-                      onClick={() => handleClickToggleDays(value)}
-                    >
-                      <span className="sm:hidden">{label}</span>
-                      <span className="hidden sm:inline">{label}요일</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-6">
-            <div className="">
-              <label className="block mb-2 font-medium">시작 시간</label>
-              <input
-                className="border border-[#e5e7eb] w-full h-10 pl-2"
-                type="time"
-                name="appt"
-                min="00:00"
-                max="24:00"
-                onChange={(event) => setStartTime(event?.target.value)}
-                value={startTime}
-              />
-            </div>
-            <div className="">
-              <label className="block mb-2 font-medium">종료 시간</label>
-              <input
-                className="border border-[#e5e7eb] w-full h-10 pl-2"
-                type="time"
-                name="appt"
-                min="00:00"
-                max="24:00"
-                onChange={(event) => setEndTime(event?.target.value)}
-                value={endTime}
-              />
-            </div>
-          </div>
-
+          <DateRangeSelector
+            date={date}
+            setDate={setDate}
+            open={open}
+            setOpen={setOpen}
+          />
+          <DayPatternSelector />
+          <TimeRangePicker />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-6">
             <div className="">
               <label className="block mb-2 font-medium">일정 제목</label>
@@ -331,105 +517,20 @@ export default function Client({ categoryData }: Props) {
               </Select>
             </div>
           </div>
-          <div className="mt-6">
-            <label className="block mb-2">색상 선택</label>
-            <div className="grid gap-2 grid-cols-5 sm:flex">
-              {colorOptions?.map((colorItem) => {
-                const { id, color } = colorItem;
-                const isSelectedColor = selectedColor === id;
-                return (
-                  <button
-                    style={{ backgroundColor: color }}
-                    key={id}
-                    className={` rounded-full w-8 h-8 ${
-                      isSelectedColor ? "border-2 border-black" : ""
-                    }`}
-                    onClick={() => setSelectedColor(id)}
-                  />
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex">
-            <div className="flex-1">
-              <p>중요 일정으로 표시</p>
-              <span>중요 일정은 강조 표시됩니다.</span>
-            </div>
-            <div className="flex gap-2 ml-2">
-              {isImportant ? (
-                <Image
-                  src={colorStar}
-                  alt="flaction_star_img"
-                  className="w-5 h-5"
-                />
-              ) : (
-                <Image src={star} alt="flaction_star_img" className="w-5 h-5" />
-              )}
-              <></>
-              <Switch
-                checked={isImportant}
-                onCheckedChange={() => setIsImportant((prev) => !prev)}
-                className=""
-              />
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between">
-              <p>생성된 일정 미리보기</p>
-              <div className="border rounded-full px-2 py-0.5 text-xs font-semibold">
-                총 {sampleData?.length || 0}개
-              </div>
-            </div>
-            <div className="hidden sm:block border rounded">
-              <div className="max-h-[200px] overflow-auto">
-                <table className="w-full">
-                  <thead className="sticky top-0 h-10 bg-white">
-                    <tr>
-                      <th>날짜</th>
-                      <th>요일</th>
-                      <th>시간</th>
-                      <th>제목</th>
-                      <th>중요</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sampleData?.map((sample) => {
-                      const {
-                        dayOfTheWeek,
-                        day,
-                        endTime,
-                        isImportant,
-                        startTime,
-                        title,
-                      } = sample;
-                      return (
-                        <tr
-                          key={`${day}-${dayOfTheWeek}`}
-                          className="text-center border-t h-[45px]"
-                        >
-                          <td>{day}</td>
-                          <td>{weekdayKoreanMap[dayOfTheWeek]}</td>
-                          <td>
-                            {startTime} ~ {endTime}
-                          </td>
-                          <td>{title}</td>
-                          <td className="text-center align-middle">
-                            <div className="flex justify-center items-center h-10">
-                              <Image
-                                src={isImportant ? colorStar : star}
-                                alt="flaction_star_img"
-                                className="w-5 h-5"
-                              />
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <ColorSelector />
+          <ImportantToggle />
+          <SchedulePreviewTable />
+        </div>
+        <div className="p-6 flex justify-end gap-5 border-t">
+          <button
+            className="w-full sm:w-fit px-4 py-2 border rounded "
+            onClick={reset}
+          >
+            리셋
+          </button>
+          <button className="w-full sm:w-fit px-4 py-2 border rounded bg-black text-white">
+            일정 생성 ({sampleData?.length || 0}개)
+          </button>
         </div>
       </div>
     </div>
