@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 
 import { CalendarIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { useMutation } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 
 import { format } from "date-fns";
 
@@ -55,6 +57,8 @@ interface SampleData {
 }
 
 export default function Client({ categoryData }: Props) {
+  const { data: session } = useSession();
+
   const [date, setDate] = React.useState<DateRange | undefined>(undefined);
 
   const [open, setOpen] = useState(false);
@@ -205,6 +209,41 @@ export default function Client({ categoryData }: Props) {
     setSelectedColor("");
     setIsImportant(false);
     setSampleData([]);
+  };
+
+  const postData = async () => {
+    try {
+      const categoryId = categoryData?.find(
+        (item) => item.name === selectedCategory
+      )?.id;
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/plans/recurring/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.user?.accessToken}`,
+          },
+          body: JSON.stringify({
+            start_date: dayjs(date?.from).format("YYYY-MM-DD"),
+            end_date: dayjs(date?.to).format("YYYY-MM-DD"),
+            day_category: dayCategory,
+            custom_days: selectedWeekdays,
+            start_time: startTime,
+            end_time: endTime,
+            label: title,
+            category: categoryId,
+            color: selectedColor,
+            is_important: isImportant,
+          }),
+        }
+      );
+      const resJson = await res.json();
+      alert(resJson?.message);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const DateRangeSelector = ({
@@ -528,7 +567,10 @@ export default function Client({ categoryData }: Props) {
           >
             리셋
           </button>
-          <button className="w-full sm:w-fit px-4 py-2 border rounded bg-black text-white">
+          <button
+            className="w-full sm:w-fit px-4 py-2 border rounded bg-black text-white"
+            onClick={postData}
+          >
             일정 생성 ({sampleData?.length || 0}개)
           </button>
         </div>
