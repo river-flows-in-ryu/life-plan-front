@@ -241,9 +241,9 @@ export default function Client({ categoryData }: Props) {
     return (
       <>
         <div className="flex justify-between items-center mb-4">
-          <div className=" w-full flex justify-between">
+          <div className=" w-full flex flex-col sm:flex-row gap-2.5 sm:gap-0 justify-between">
             <h2 className="text-lg font-bold flex items-center">활동 내역</h2>
-            <div className="w-full max-w-xs  border border-[#e5e7eb] h-10 rounded relative p-1">
+            <div className="w-full max-w-xs  border border-[#e5e7eb] h-10 rounded relative p-1 ">
               <Image
                 className="absolute top-1/2 left-3 transform -translate-y-1/2"
                 src={searchImg}

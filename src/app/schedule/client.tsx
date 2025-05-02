@@ -363,11 +363,12 @@ export default function Client() {
     }
   };
   return (
-    <div className="">
+    <div className=" py-8">
       <Link href="/schedule-report">
         <button>리포트 보러가기</button>
       </Link>
-      <div className="flex flex-col sm:flex-row bg-[#f3f4f6] p-4 gap-4 ">
+      <h1 className="text-2xl mb-2 font-bold pl-4">일정 관리</h1>
+      <div className="flex flex-col sm:flex-row  p-4 gap-4 ">
         <div className="flex flex-col sm:flex-row gap-4" id="capture">
           <div className="border border-[#e5e7eb] rounded-2xl bg-white sm:w-[315px] pb-10 sm:pb-0">
             <h3 className="p-4 text-2xl	font-bold">Calendar</h3>
@@ -442,9 +443,9 @@ export default function Client() {
         <div className="border border-[#e5e7eb] rounded-2xl bg-white w-full sm:w-[330px] p-4">
           <h3 className=" text-2xl	font-bold">Schedule Details</h3>
           <div className="mt-6">
-            <label className="block">시작시간</label>
+            <label className="block font-medium">시작시간</label>
             <input
-              className="border border-[#e5e7eb] w-full h-10 pl-2"
+              className="border border-[#e5e7eb] w-full h-10 pl-2 mt-2"
               type="time"
               name="appt"
               min="00:00"
@@ -454,9 +455,9 @@ export default function Client() {
             />
           </div>
           <div className="mt-4">
-            <label className="block">종료시간</label>
+            <label className="block font-medium">종료시간</label>
             <input
-              className="border border-[#e5e7eb] w-full h-10 pl-2"
+              className="border border-[#e5e7eb] w-full h-10 pl-2 mt-2"
               type="time"
               name="appt"
               min="00:00"
@@ -466,24 +467,24 @@ export default function Client() {
             />
           </div>
           <div className="mt-4">
-            <label className="block">일정제목</label>
+            <label className="block font-medium">일정제목</label>
             <input
-              className="border border-[#e5e7eb] w-full h-10 pl-2"
+              className="border border-[#e5e7eb] w-full h-10 pl-2 mt-2"
               type="text"
               onChange={(event) => setPlanTitle(event?.target.value)}
               value={planTitle}
             />
           </div>
           <div className="mt-4 ">
-            <label className="block">일정상세</label>
+            <label className="block font-medium">일정상세</label>
             <textarea
-              className="border border-[#e5e7eb] w-full h-[60px] pl-2 pt-1"
+              className="border border-[#e5e7eb] w-full h-[60px] pl-2 pt-1 mt-2"
               onChange={(event) => setPlanDetail(event?.target.value)}
               value={planDetail}
             />
           </div>
 
-          <div className="flex items-center space-x-2 ">
+          <div className="flex items-center space-x-2 mt-2">
             <Checkbox
               id="terms"
               checked={isImportant}
