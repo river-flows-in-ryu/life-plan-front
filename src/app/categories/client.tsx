@@ -390,7 +390,6 @@ export default function Client({ categoryData }: Props) {
         />
       </Modal>
       <HeaderSection />
-      {/* 컴포넌트화 시에 이상행동 */}
       <div
         className={`p-6 border border-[#e5e7eb] w-full mb-4 ${
           periodType === "custom" ? "inline-block" : "hidden"
