@@ -1,7 +1,9 @@
 import React from "react";
 
 import { Pie } from "react-chartjs-2";
+import Image from "next/image";
 
+import pieChart from "../../../public/pie-chart.png";
 interface Props {
   total_minutes: number;
   data: PropsData[];
@@ -55,7 +57,22 @@ export default function WeeklyUsageAnalysisChart({
     ],
   };
   return (
-    //
-    <Pie data={weeklyData} />
+    <>
+      {data?.data?.length !== 0 ? (
+        <Pie data={weeklyData} />
+      ) : (
+        <div className="flex flex-col justify-center items-center pt-10 pb-0 sm:pb-10 gap-3 ">
+          <div className="w-[56px] h-[56px] bg-gray-100 rounded-full flex justify-center items-center">
+            <Image
+              src={pieChart}
+              alt="flaction_donut_img"
+              width={32}
+              height={32}
+            />
+          </div>
+          <span>데이터가 없습니다.</span>
+        </div>
+      )}
+    </>
   );
 }
