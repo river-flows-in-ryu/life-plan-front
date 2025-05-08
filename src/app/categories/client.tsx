@@ -81,8 +81,19 @@ export default function Client({ categoryData }: Props) {
 
   useEffect(() => {
     const period = searchParams.get("period");
+    const startDateStr = searchParams.get("start_date");
+    const endDateStr = searchParams.get("end_date");
+
     if (period === "week" || period === "month" || period === "custom") {
       setPeriodType(period);
+    }
+
+    if (startDateStr && endDateStr) {
+      const from = new Date(startDateStr);
+      const to = new Date(endDateStr);
+      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+        setDate({ from, to });
+      }
     }
   }, [searchParams]);
 
@@ -197,10 +208,10 @@ export default function Client({ categoryData }: Props) {
           </div>
 
           <button
-            className="h-10 w-[130px] bg-black text-white rounded text-sm px-4 py-2 hidden sm:inline-block font-medium"
+            className="h-10 w-[170px] bg-black text-white rounded text-sm px-4 py-2 hidden sm:inline-block font-medium"
             onClick={handleClickChangeCategory}
           >
-            카테고리 변경
+            카테고리 일괄 변경
           </button>
         </div>
         <div className="w-full sm:w-1/3 p-4 border border-[#e5e7eb] rounded mb-6 sm:mb-0">
@@ -275,13 +286,13 @@ export default function Client({ categoryData }: Props) {
               )}
             </div>
           </div>
-          <button
-            className="h-10 w-[130px] bg-black text-white rounded text-sm px-4 py-2 inline-block sm:hidden font-medium"
-            onClick={handleClickChangeCategory}
-          >
-            카테고리 변경
-          </button>
         </div>
+        <button
+          className="h-10 w-full bg-black text-white rounded text-sm px-4 py-2 inline-block sm:hidden font-medium mb-5"
+          onClick={handleClickChangeCategory}
+        >
+          카테고리 일괄 변경
+        </button>
         <div
           className={`flex flex-col items-center ${
             filteredPlans?.length !== 0
@@ -355,13 +366,12 @@ export default function Client({ categoryData }: Props) {
               </h3>
               <p className="text-gray-500 mb-6 text-center">
                 선택한 기간(
-                {periodType === "weekly"
+                {periodType === "week"
                   ? "주간"
-                  : periodType === "monthly"
+                  : periodType === "month"
                   ? "월간"
                   : "사용자 지정"}
-                ) 동안 &nbsp;
-                <br className="inline-block sm:hidden" />
+                ) 동안 <br className="inline-block sm:hidden" />
                 {category} 카테고리에 기록된 활동이 없습니다.
               </p>
 
