@@ -41,24 +41,28 @@ export default function Pagination({
   };
 
   return (
-    <div className="w-full flex items-center gap-1">
+    <div className="w-full flex justify-center items-center gap-1">
       {startPage > 1 && (
-        <button onClick={handlePrev} className="px-2.5 py-2">
-          &lt; 이전
+        <button onClick={handlePrev} className="w-10 h-10 text-gray-500">
+          &lt;
         </button>
       )}
       {pages?.map((page) => (
         <button
           key={page}
           onClick={() => onPageChange(page)}
-          className="w-5 h-5 border rounded"
+          className={`w-[40px] h-[40px] flex items-center justify-center  rounded text-sm p-0 leading-none flex-shrink-0 hover:bg-gray-100 ${
+            page === currentPage
+              ? "border text-black font-semibold"
+              : "text-gray-500"
+          } `}
         >
           {page}
         </button>
       ))}
       {endPage < totalPages && (
-        <button onClick={handleNext} className="px-2.5 py-2">
-          다음 &gt;
+        <button onClick={handleNext} className="w-10 h-10 text-gray-500">
+          &gt;
         </button>
       )}
     </div>
