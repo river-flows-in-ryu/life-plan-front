@@ -10,6 +10,7 @@ import GoalInputSection from "@/components/goals/goalInputSection";
 
 import Pagination from "@/utils/pagination";
 import GoalCard from "@/components/goals/goalCard";
+import BadgeDashboard from "@/components/goals/badgeDashboard";
 
 interface Props {
   categoryData: { id: number; name: string }[];
@@ -20,6 +21,14 @@ interface Props {
       completed: number;
     };
   };
+  badgeData: {
+    achieved: boolean;
+    description: string;
+    id: number;
+    image: string;
+    name: string;
+    category: number;
+  }[];
 }
 
 interface Goals {
@@ -36,7 +45,7 @@ interface Goals {
   current: number;
 }
 
-export default function Client({ categoryData, goalsData }: Props) {
+export default function Client({ categoryData, goalsData, badgeData }: Props) {
   const [goalStatus, setGoalStatus] = useState<"ongoing" | "completed">(
     "ongoing"
   );
@@ -129,15 +138,13 @@ export default function Client({ categoryData, goalsData }: Props) {
               />
             </div>
           </div>
-          <div className=" border rounded ">
-            <div className="px-6 pt-6 pb-3"></div>
-          </div>
         </div>
         <div className="flex flex-col gap-6">
           <GoalInputSection categoryData={categoryData} />
           <GoalTips />
         </div>
       </div>
+      <BadgeDashboard badgeData={badgeData} />
     </div>
   );
 }
