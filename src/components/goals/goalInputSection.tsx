@@ -59,7 +59,10 @@ export default function GoalInputSection({ categoryData }: Props) {
 
   const { data: session } = useSession();
 
-  const onSubmit: SubmitHandler<IFormInput> = (data) => handleGoalSubmit(data);
+  const onSubmit: SubmitHandler<IFormInput> = (data) => {
+    handleGoalSubmit(data);
+    window.location.reload();
+  };
 
   const handleGoalSubmit = async (data: IFormInput) => {
     const start_date = dayjs(data.startDate).format("YYYY-MM-DD");

@@ -22,13 +22,16 @@ interface Props {
     };
   };
   badgeData: {
-    achieved: boolean;
-    description: string;
-    id: number;
-    image: string;
-    name: string;
-    category: number;
-  }[];
+    badges: {
+      achieved: boolean;
+      description: string;
+      id: number;
+      image: string;
+      name: string;
+      category: number;
+    }[];
+    count: number;
+  };
 }
 
 interface Goals {
@@ -84,7 +87,32 @@ export default function Client({ categoryData, goalsData, badgeData }: Props) {
     handleFetch();
   }, [session, goalStatus, page, setPage]);
 
-  const badgeCount = 0;
+  const handleClickDelete = async (id: number) => {
+    const isConfirmed = window.confirm("정말 삭제하시겠습니까?");
+    if (!isConfirmed) {
+      return;
+    }
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/goals/${id}`,
+        {
+          method: "delete",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.user?.accessToken}`,
+          },
+        }
+      );
+      if (res.ok) {
+        alert("성공적으로 삭제되었습니다.");
+        window.location.reload();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const badgeCount = badgeData?.count || 0;
   const activeGoals = goalsData?.count?.ongoing || 0;
   const completedCount = goalsData?.count?.completed || 0;
 
@@ -121,9 +149,12 @@ export default function Client({ categoryData, goalsData, badgeData }: Props) {
                   종료 ({completedCount || 0})
                 </button>
               </div>
-              <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <GoalCard data={data} />
-              </div>
+              <GoalCard
+                data={data}
+                handleClickDelete={handleClickDelete}
+                goalStatus={goalStatus}
+                setGoalStatus={setGoalStatus}
+              />
             </div>
             <div className="pb-6">
               <Pagination
@@ -144,7 +175,8 @@ export default function Client({ categoryData, goalsData, badgeData }: Props) {
           <GoalTips />
         </div>
       </div>
-      <BadgeDashboard badgeData={badgeData} />
+      {/* TODO */}
+      <BadgeDashboard badgeData={badgeData?.badges} />
     </div>
   );
 }

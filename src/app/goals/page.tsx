@@ -51,8 +51,10 @@ export default async function Page() {
           },
         }
       );
-      const resJson = await res.json();
-      return resJson;
+      if (res.ok) {
+        const resJson = await res.json();
+        return resJson;
+      }
     } catch (error) {
       console.log(error);
     }
@@ -62,14 +64,12 @@ export default async function Page() {
   const goalsData = await goalsFetch();
   const badgeData = await badgeFetch();
 
-  console.log(badgeData);
-
   return (
     //
     <Client
       categoryData={categoryData}
       goalsData={goalsData}
-      badgeData={badgeData?.badges}
+      badgeData={badgeData}
     ></Client>
   );
 }
