@@ -1,27 +1,16 @@
 import React, { useState } from "react";
 
 import { useSession } from "next-auth/react";
-import Image from "next/image";
 
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 
-import circles from "../../../public/target.png";
-import check from "../../../public/check-mark.png";
+import EmptyOngoingGoal from "./emptyOngoingGoal";
 
-interface Goals {
-  category: number;
-  created_at: string;
-  end_date: string;
-  goal_type: string;
-  id: number;
-  is_copleted: boolean;
-  period_type: "daily" | "weekly" | "monthly";
-  start_date: string;
-  target: number;
-  title: string;
-  current: number;
-}
+import { Goals } from "@/types/goal";
+
+import EmptyCompletedGoal from "./emptyCompletedGoal";
+
 interface Props {
   data: Goals[];
   handleClickDelete: (id: number) => void;
@@ -81,65 +70,20 @@ export default function GoalCard({
     }
   };
 
-  const PERIOD_MAP = {
+  const PERIOD_MAP: Record<Goals["period_type"], string> = {
     daily: "일일",
     weekly: "주간",
     monthly: "월간",
   };
+
   return (
     <>
       {data?.length === 0 ? (
         <div className="py-12 px-4 text-center">
           {goalStatus === "ongoing" ? (
-            <div className="flex flex-col justify-center">
-              <div className="mx-auto mb-6">
-                <div className="w-[120px] h-[120px] rounded-full flex justify-center items-center bg-gray-50 ">
-                  <Image
-                    src={circles}
-                    alt="target_flaction_img"
-                    width={64}
-                    height={64}
-                  />
-                </div>
-              </div>
-              <h3 className="text-xl font-medium mb-2">
-                아직 설정된 목표가 없습니다.
-              </h3>
-              <p className=" text-gray-500">
-                목표를 설정하고 달성하여 성취감을 느껴보세요.
-              </p>
-              <p className="mb-8  text-gray-500">
-                목표 달성 시 뱃지를 획득할 수 있습니다.
-              </p>
-            </div>
+            <EmptyOngoingGoal />
           ) : (
-            <div className="flex flex-col justify-center">
-              <div className="mx-auto mb-6">
-                <div className="w-[120px] h-[120px] rounded-full flex justify-center items-center bg-green-50 ">
-                  <Image
-                    src={check}
-                    alt="target_flaction_img"
-                    width={64}
-                    height={64}
-                  />
-                </div>
-              </div>
-              <h3 className="text-xl font-medium mb-2">
-                종료된 목표가 없습니다.
-              </h3>
-              <p className="text-gray-500">
-                목표가 종료되면 이곳에 표시됩니다.
-              </p>
-              <p className="mb-8 text-gray-500">
-                목표를 달성하고 뱃지를 획득해보세요
-              </p>
-              <button
-                className="py-2 px-4 w-fit border rounded text-sm font-medium mx-auto"
-                onClick={() => setGoalStatus("ongoing")}
-              >
-                진행 중인 목표 보기
-              </button>
-            </div>
+            <EmptyCompletedGoal setGoalStatus={setGoalStatus} />
           )}
         </div>
       ) : (

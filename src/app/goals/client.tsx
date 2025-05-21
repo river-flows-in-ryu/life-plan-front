@@ -12,6 +12,8 @@ import Pagination from "@/utils/pagination";
 import GoalCard from "@/components/goals/goalCard";
 import BadgeDashboard from "@/components/goals/badgeDashboard";
 
+import { Goals } from "@/types/goal";
+
 interface Props {
   categoryData: { id: number; name: string }[];
   goalsData: {
@@ -32,20 +34,6 @@ interface Props {
     }[];
     count: number;
   };
-}
-
-interface Goals {
-  category: number;
-  created_at: string;
-  end_date: string;
-  goal_type: string;
-  id: number;
-  is_copleted: boolean;
-  period_type: "daily" | "weekly" | "monthly";
-  start_date: string;
-  target: number;
-  title: string;
-  current: number;
 }
 
 export default function Client({ categoryData, goalsData, badgeData }: Props) {
