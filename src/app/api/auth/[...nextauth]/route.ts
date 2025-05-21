@@ -40,7 +40,7 @@ interface ExtendedJWT extends JWT {
   accessTokenExpires?: number;
 }
 
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     KakaoProvider({
       clientId: process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || "",
