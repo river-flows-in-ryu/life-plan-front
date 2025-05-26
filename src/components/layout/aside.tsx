@@ -17,7 +17,7 @@ export default function Aside() {
   return (
     //
     <div
-      className={`h-full fixed left-0 z-50 w-[250px] border-r pt-6 pl-4 hidden sm:block`}
+      className={`h-full fixed left-0 z-[150] w-[250px] border-r pt-6 pl-4 hidden sm:block bg-white`}
     >
       <div className="flex flex-col gap-2">
         {navigarionItems?.map((item) => {
