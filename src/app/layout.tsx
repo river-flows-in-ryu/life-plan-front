@@ -5,6 +5,10 @@ import "./globals.css";
 import AuthContainer from "@/components/authContainer";
 import PushContainer from "@/components/pushContainer";
 import QueryContainer from "@/components/queryContainer";
+import Header from "@/components/layout/header";
+import Aside from "@/components/layout/aside";
+import Footer from "@/components/layout/footer";
+import Main from "@/components/layout/main";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +41,14 @@ export default function RootLayout({
         <QueryContainer>
           <AuthContainer>
             <PushContainer>
-              <div className="sm:max-w-[1050px] mx-auto">{children}</div>
+              <div className="flex flex-col min-h-screen">
+                <Header />
+                <div className="flex flex-1">
+                  <Aside />
+                  <Main>{children}</Main>
+                </div>
+                <Footer />
+              </div>
             </PushContainer>
           </AuthContainer>
         </QueryContainer>
