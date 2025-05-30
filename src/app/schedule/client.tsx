@@ -1,14 +1,13 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 import Calendar from "react-calendar";
 import dayjs from "dayjs";
-import { HexColorPicker } from "react-colorful";
 import html2canvas from "html2canvas";
 import Link from "next/link";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import TimeWheel from "@/components/schedule/timeWheel";
+import ScheduleForm from "@/components/schedule/scheduleForm";
 
 import { Plan } from "@/types/plan";
 
@@ -31,12 +30,8 @@ export default function Client() {
   const [data, setData] = useState<Plan[]>([]);
 
   const [selectedDate, setSelectedDate] = useState<DateValue>(new Date());
-  const [startTime, setStartTime] = useState<string>("");
-  const [endTime, setEndTime] = useState<string>("");
-  const [planTitle, setPlanTitle] = useState<string>("");
-  const [planDetail, setPlanDetail] = useState<string>("");
-  const [isImportant, setIsImportant] = useState<boolean>(false);
-  const [color, setColor] = useState("#fff");
+
+  const [resetSignal, setResetSignal] = useState(false);
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -48,21 +43,12 @@ export default function Client() {
   const [holiday, setHoliday] = useState<HolidayType[]>([]);
 
   const { data: session } = useSession();
-  console.log(session);
 
-  useEffect(() => {
+  const selectedPlan = useMemo(() => {
     if (selectedId) {
-      const newData = data?.filter((data) => data?.id === selectedId);
-      const { startTime, endTime, description, label, color, isImportant } =
-        newData[0];
-      setStartTime(startTime || "");
-      setEndTime(endTime || "");
-      setPlanTitle(label);
-      setPlanDetail(description);
-      setIsImportant(isImportant || false);
-      setColor(color);
+      return data?.find((d) => d.id === selectedId || null);
     }
-  }, [selectedId]);
+  }, [selectedId, data]);
 
   useEffect(() => {
     if (!session) {
@@ -87,6 +73,7 @@ export default function Client() {
         const data1 = await res1.json();
         setScheduleDates(data1?.data);
 
+        // 공휴일 api
         const res2 = await fetch(
           `${process.env.NEXT_PUBLIC_OPEN_API_URL}?serviceKey=${
             process.env.NEXT_PUBLIC_OPEN_API_KEY
@@ -140,19 +127,24 @@ export default function Client() {
     }
   }, [selectedDate, session]);
   const cleanData = async () => {
-    setStartTime("");
-    setEndTime("");
-    setPlanTitle("");
-    setPlanDetail("");
-    setColor("#fff");
-    setIsImportant(false);
+    setResetSignal(true);
     setSelectedId(null);
-    // useColor("#fff");
   };
 
   useEffect(() => {
     cleanData();
   }, [selectedDate]);
+
+  const formProps = {
+    selectedDate,
+    setData,
+    data,
+    cleanData,
+    selectedId,
+    selectedPlan,
+    resetSignal,
+    setResetSignal,
+  };
 
   const getTileClassName = ({ date, view }: { date: Date; view: string }) => {
     if (view !== "month") return null;
@@ -174,148 +166,6 @@ export default function Client() {
     }
 
     return null;
-  };
-
-  const handleClickSubmit = async () => {
-    const formattedDate = dayjs(selectedDate).format("YYYY-MM-DD");
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/plans/create/`,
-      {
-        method: "post",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.user?.accessToken}`,
-        },
-        body: JSON.stringify({
-          date: formattedDate,
-          start_time: startTime,
-          end_time: endTime,
-          label: planTitle,
-          description: planDetail,
-          is_important: isImportant,
-          color: color,
-        }),
-      }
-    );
-    const data = await res.json();
-    alert(data?.message);
-    if (data?.data) {
-      const {
-        color,
-        description,
-        end_time,
-        label,
-        start_time,
-        id,
-        is_important,
-      } = data?.data;
-      //정렬해서 넣기
-      setData((prev: Plan[]) =>
-        [
-          ...prev,
-          {
-            color,
-            description,
-            label,
-            startTime: start_time.slice(0, 5),
-            endTime: end_time.slice(0, 5),
-            isImportant: is_important,
-            id,
-          },
-        ].sort((a, b) => {
-          return a.startTime.localeCompare(b.startTime);
-        })
-      );
-      cleanData();
-    }
-  };
-
-  const handleClickUpdate = async () => {
-    try {
-      if (!selectedId) {
-        alert("선택후 수정을 해주세요");
-        return;
-      }
-      const formattedDate = dayjs(selectedDate).format("YYYY-MM-DD");
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/plans/${selectedId}/update/`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.user?.accessToken}`,
-          },
-          body: JSON.stringify({
-            date: formattedDate,
-            start_time: startTime,
-            end_time: endTime,
-            label: planTitle,
-            description: planDetail,
-            is_important: isImportant,
-            color: color,
-          }),
-        }
-      );
-      const updatedPlan = await res.json();
-      const updateData = updatedPlan?.data;
-
-      if (res?.ok) {
-        setData((prevPlans) => {
-          const index = prevPlans.findIndex((plan) => plan.id === selectedId);
-
-          if (index === -1) {
-            console.error("Plan not found for update");
-            return prevPlans;
-          }
-
-          const updateDatas = [
-            ...prevPlans.slice(0, index),
-            {
-              color: updateData?.color,
-              description: updateData?.description,
-              label: updateData?.label,
-              startTime: updateData?.start_time.slice(0, 5),
-              endTime: updateData?.end_time.slice(0, 5),
-              isImportant: updateData?.is_important,
-              id: updateData?.id,
-            },
-            ...prevPlans.slice(index + 1),
-          ];
-
-          return updateDatas;
-        });
-        alert("수정이 완료되었습니다.");
-      } else {
-        alert(updatedPlan?.message);
-      }
-      //todo
-    } catch (error: any) {
-      console.log("Error:", error.message);
-    }
-  };
-
-  const handleClickDelete = async () => {
-    if (window.confirm("이 일정을 삭제하시겠습니까?")) {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/plans/${selectedId}/delete/`,
-        {
-          method: "delete",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.user?.accessToken}`,
-          },
-        }
-      );
-      const jsonData = await res.json();
-      if (jsonData?.message === "SUCCESS") {
-        alert("성공적으로 삭제되었습니다.");
-        const newData = data?.filter((data) => data?.id !== selectedId);
-        setData(newData);
-        cleanData();
-      } else {
-        alert("실패입니다. 다시 시도해주세요");
-      }
-    }
   };
 
   //todo
@@ -362,6 +212,7 @@ export default function Client() {
       setCurrentYear(dayjs(activeStartDate).year());
     }
   };
+
   return (
     <div className=" py-8">
       <Link href="/schedule-report">
@@ -439,108 +290,7 @@ export default function Client() {
             </ul>
           </div>
         </div>
-
-        <div className="border border-[#e5e7eb] rounded-2xl bg-white w-full sm:w-[330px] p-4">
-          <h3 className=" text-2xl	font-bold">Schedule Details</h3>
-          <div className="mt-6">
-            <label className="block font-medium">시작시간</label>
-            <input
-              className="border border-[#e5e7eb] w-full h-10 pl-2 mt-2"
-              type="time"
-              name="appt"
-              min="00:00"
-              max="24:00"
-              onChange={(event) => setStartTime(event?.target.value)}
-              value={startTime}
-            />
-          </div>
-          <div className="mt-4">
-            <label className="block font-medium">종료시간</label>
-            <input
-              className="border border-[#e5e7eb] w-full h-10 pl-2 mt-2"
-              type="time"
-              name="appt"
-              min="00:00"
-              max="24:00"
-              onChange={(event) => setEndTime(event?.target.value)}
-              value={endTime}
-            />
-          </div>
-          <div className="mt-4">
-            <label className="block font-medium">일정제목</label>
-            <input
-              className="border border-[#e5e7eb] w-full h-10 pl-2 mt-2"
-              type="text"
-              onChange={(event) => setPlanTitle(event?.target.value)}
-              value={planTitle}
-            />
-          </div>
-          <div className="mt-4 ">
-            <label className="block font-medium">일정상세</label>
-            <textarea
-              className="border border-[#e5e7eb] w-full h-[60px] pl-2 pt-1 mt-2"
-              onChange={(event) => setPlanDetail(event?.target.value)}
-              value={planDetail}
-            />
-          </div>
-
-          <div className="flex items-center space-x-2 mt-2">
-            <Checkbox
-              id="terms"
-              checked={isImportant}
-              onCheckedChange={() =>
-                setIsImportant((isImportant) => !isImportant)
-              }
-            />
-            <label
-              htmlFor="terms"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              주요 일정
-            </label>
-          </div>
-
-          <div className="mt-6">
-            <HexColorPicker
-              color={color}
-              onChange={setColor}
-              style={{ margin: "auto" }}
-            />
-          </div>
-
-          <div className="flex gap-2 my-2.5 justify-center">
-            {!selectedId && (
-              <button
-                className="bg-[#2564eb] w-full h-10 rounded text-white"
-                onClick={handleClickSubmit}
-              >
-                Add
-              </button>
-            )}
-            {selectedId && (
-              <>
-                <button
-                  className="bg-[#eab208] w-full h-10 rounded text-white"
-                  onClick={handleClickUpdate}
-                >
-                  Edit
-                </button>
-                <button
-                  className="bg-red-500 w-full h-10 rounded text-white"
-                  onClick={handleClickDelete}
-                >
-                  Delete
-                </button>
-              </>
-            )}
-          </div>
-          <button
-            className="bg-black text-white w-full h-10 rounded"
-            onClick={cleanData}
-          >
-            Reset All
-          </button>
-        </div>
+        <ScheduleForm {...formProps} />
       </div>
     </div>
   );

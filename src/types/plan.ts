@@ -5,8 +5,10 @@ export interface Plan {
   start_time?: string;
   endTime?: string;
   end_time?: string;
-  label: string;
-  description: string;
+  label?: string;
+  planTitle?: string;
+  description?: string;
+  planDetail?: string;
   isImportant?: boolean;
   im_important?: boolean;
   color: string;
