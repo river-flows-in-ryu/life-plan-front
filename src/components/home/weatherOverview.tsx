@@ -10,7 +10,13 @@ import { Droplets } from "lucide-react";
 import { Wind } from "lucide-react";
 import mask from "../../../public/mask.png";
 import { Crosshair } from "lucide-react";
-import { MapPinHouse } from "lucide-react";
+import { MapPinHouse, Cloud, Sun } from "lucide-react";
+
+import {
+  dustGradeClassMap,
+  dustGradeLabelMap,
+  weatherStates,
+} from "@/styles/homePageStyle";
 
 const dustGradeMap: { [key: number]: string } = {
   1: "좋음",
@@ -43,31 +49,42 @@ const ptyMap: { [key: number]: string } = {
   7: "눈날림",
 };
 
-const getHour = () => {
+const getHour = (type: "실황" | "예보") => {
   const now = dayjs();
   const hour = now.hour();
   const minute = now.minute();
 
   let value;
 
-  if (minute >= 10) {
-    value = hour;
-  } else {
-    value = hour - 1;
-    if (value < 0) {
-      value = 23;
+  if (type === "실황") {
+    if (minute >= 10) {
+      value = hour;
+    } else {
+      value = hour - 1;
+      if (value < 0) {
+        value = 23;
+      }
+    }
+    return String(value).padStart(2, "0") + "00";
+  }
+  if (type === "예보") {
+    if (minute < 30) {
+      value = hour - 1;
+      if (value < 0) value = 23;
+      return String(value).padStart(2, "0") + "30";
+    } else {
+      value = hour;
+      return String(value).padStart(2, "0") + "00";
     }
   }
-  return String(value).padStart(2, "0") + "00";
 };
 
 export default function WeatherOverview() {
-  //
   const [precipitation, setPrecipitation] = useState(null); //강수량
   const [temperature, setTemperature] = useState(null); //기온
   const [humidity, setHumidity] = useState(0); //습도
   const [windSpeed, setWindSpeed] = useState(0); //풍속
-  const [sky, setSky] = useState(null); //하늘 상태
+  const [sky, setSky] = useState<number | null>(null); //하늘 상태
   const [pm10Value, setPm10Value] = useState(0); // 미세먼지
   const [pm10Grade, setPm10Grade] = useState(0); // 미세먼지 등급
   const [pm25Value, setPm25Value] = useState(0); // 초미세먼지
@@ -76,9 +93,13 @@ export default function WeatherOverview() {
   const [currentLocation, setCurrentLocation] = useState("");
   const [dustStation, setDustStation] = useState("");
 
+  const dustGrade = Math.max(pm10Grade, pm25Grade) || 1;
+
   useEffect(() => {
     const today = dayjs().format("YYYYMMDD");
-    const baseTime = getHour();
+    const nowcast = getHour("실황");
+    const forecast = getHour("예보");
+
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -90,13 +111,13 @@ export default function WeatherOverview() {
 
           // 초단기실황
           const ultraSrtNcst = await fetch(
-            `${process.env.NEXT_PUBLIC_WEATHER_API_URL}/getUltraSrtNcst?serviceKey=${process.env.NEXT_PUBLIC_GOV_OPEN_API_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${today}&base_time=${baseTime}&nx=${locationToXYJson?.x}&ny=${locationToXYJson?.y}`
+            `${process.env.NEXT_PUBLIC_WEATHER_API_URL}/getUltraSrtNcst?serviceKey=${process.env.NEXT_PUBLIC_GOV_OPEN_API_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${today}&base_time=${nowcast}&nx=${locationToXYJson?.x}&ny=${locationToXYJson?.y}`
           );
           const ultraSrtNcstJson = await ultraSrtNcst.json();
 
           // 초단기예보
           const ultraSrtFcst = await fetch(
-            `${process.env.NEXT_PUBLIC_WEATHER_API_URL}/getUltraSrtFcst?serviceKey=${process.env.NEXT_PUBLIC_GOV_OPEN_API_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${today}&base_time=${baseTime}&nx=${locationToXYJson?.x}&ny=${locationToXYJson?.y}`
+            `${process.env.NEXT_PUBLIC_WEATHER_API_URL}/getUltraSrtFcst?serviceKey=${process.env.NEXT_PUBLIC_GOV_OPEN_API_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${today}&base_time=${forecast}&nx=${locationToXYJson?.x}&ny=${locationToXYJson?.y}`
           );
           const ultraSrtFcstJson = await ultraSrtFcst.json();
 
@@ -176,103 +197,146 @@ export default function WeatherOverview() {
     }
   }, []);
 
-  function getWeatherSummary(skyCode: number, ptyCode: number) {
-    if (ptyCode !== 0 && ptyMap[ptyCode]) {
+  const getWeatherSummary = (
+    skyCode: number | null,
+    ptyCode: number | null
+  ) => {
+    if (ptyCode !== null && ptyCode !== 0 && ptyMap[ptyCode]) {
       return ptyMap[ptyCode];
-    } else if (skyMap[skyCode]) {
+    } else if (skyCode !== null && skyMap[skyCode]) {
       return skyMap[skyCode];
     } else {
       return "알 수 없음";
     }
-  }
+  };
 
-  function getWeatherText(skyCode: number, ptyCode: number, temp: number) {
-    console.log(skyCode, ptyCode, temp);
+  const getWeatherText = (skyCode: number, ptyCode: number, temp: number) => {
     const weather = getWeatherSummary(skyCode, ptyCode);
     return `현재 날씨는 ${weather}이며, 기온은 ${temp}°C입니다.`;
-  }
+  };
+
+  const getWeatherStyle = (sky: number | null, pty: number | null) => {
+    const skyLabel = sky !== null ? skyMap[sky] : "";
+    const ptyLabel = pty !== null ? ptyMap[pty] : "";
+
+    if (ptyLabel) {
+      if (pty === 1) {
+        return weatherStates.find((s) => s.name === "비") || null;
+      }
+
+      if (pty === 3 || pty === 7) {
+        return weatherStates.find((s) => s.name === "눈") || null;
+      }
+
+      if (pty === 5 || pty === 6 || pty === 2) {
+        return weatherStates.find((s) => s.name === "빗방울") || null;
+      }
+    }
+    return weatherStates.find((s) => s.name === skyLabel) || null;
+  };
+
+  const weather = getWeatherStyle(sky, precipitation);
+
+  const Icon = weather?.icon;
 
   return (
     <div className="mt-6 border rounded-lg">
-      <div className="px-6 pt-6 pb-3 flex items-center gap-2 ">
-        <ThermometerSun className="w-4 h-4" />
-        <h3 className="font-semibold ">오늘의 날씨</h3>
-      </div>
-      <div className="flex justify-center font-bold text-2xl">
-        {temperature}°C
-      </div>
-      <p className="text-center">{sky !== null ? skyMap[sky] : ""}</p>
-
-      <div className="flex justify-evenly p-6 pt-0 mt-5">
-        <div className="flex items-center gap-2">
-          <Droplets className="w-4 h-4 " color="#558bcf" />
-          <div>
-            <span className="text-xs text-gray-500">습도</span>
-            <p className="text-sm font-medium">{humidity}%</p>
-          </div>
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <Wind className="w-4 h-4" />
-            <div>
-              <span className="text-xs text-gray-500">바람</span>
-              <p className="text-sm font-medium">{windSpeed}km/h</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="p-4">
-        <div className="flex justify-between mb-3">
-          <span>대기질 정보</span>
-          <span></span>
-        </div>
-        <div className=""></div>
-      </div>
-      <div className="flex justify-evenly p-6 pt-0 ">
-        <div className="flex items-center gap-2">
-          <Image src={mask} alt="mask_img" width={16} height={16} />
-          <div>
-            <span className="text-xs text-gray-500">미세먼지</span>
-            <p className="text-sm font-medium">{pm10Value}μg/m³</p>
-            <span
-              style={{ color: dustHexColor[pm10Grade] }}
-              className="font-bold text-sm"
-            >
-              {dustGradeMap[pm10Grade]}
+      <div
+        className={`px-6 py-8 relative rounded-t-lg ${weather?.bgColor} ${weather?.borderColor} ${weather?.gradient}`}
+      >
+        <div className="flex justify-center px-4 py-2 mb-4">
+          <div className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-4 py-2 rounded-full">
+            {Icon && <Icon />}
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {getWeatherSummary(sky, precipitation)}
             </span>
           </div>
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <Image src={mask} alt="mask_img" width={16} height={16} />
+        <p className="text-center text-4xl font-bold text-gray-900 mb-2">
+          {temperature} °C
+        </p>
+        <div className="absolute top-4 right-1">
+          {Icon && <Icon className="w-24 h-24" color="#cecece" />}
+        </div>
+      </div>
+      <div className="p-6">
+        <div className="flex gap-4">
+          <div
+            className={`p-4 flex items-center w-1/2 gap-3 border rounded-2xl ${weather?.bgColor} ${weather?.borderColor}`}
+          >
+            <div className={`w-9 h-9 p-2 rounded-xl ${weather?.iconBg}`}>
+              <Droplets
+                className={`text-gray-500 ${weather?.iconColor}`}
+                width={20}
+                height={20}
+              />
+            </div>
+            <div className="">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                습도
+              </div>
+              <p className="text-xl font-semibold text-gray-900 dark:text-white">
+                {humidity}%
+              </p>
+            </div>
+          </div>
+          <div
+            className={`p-4 flex items-center w-1/2 gap-1  border rounded-2xl ${weather?.bgColor} ${weather?.borderColor}`}
+          >
+            <div className="w-9 h-9 bg-green-100 dark:bg-green-900 p-2 rounded-xl items-center">
+              <Wind className="text-green-600" width={20} height={20} />
+            </div>
             <div>
-              <span className="text-xs text-gray-500">초미세먼지</span>
-              <p className="text-sm font-medium">{pm25Value}μg/m³</p>
-              <span
-                style={{ color: dustHexColor[pm25Grade] }}
-                className="font-bold text-sm"
-              >
-                {dustGradeMap[pm25Grade]}
-              </span>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                바람
+              </div>
+              <p className="text-xl font-semibold text-gray-900 dark:text-white">
+                {windSpeed}km/h
+              </p>
             </div>
           </div>
         </div>
-      </div>
-      <div className="p-3 rounded-lg">
-        <p className="flex items-center gap-2">
-          <Crosshair width={16} height={16} />
-          <span>현재 위치 {currentLocation}</span>
-        </p>
-        <p className="flex items-center gap-2">
-          <MapPinHouse width={16} height={16} />
-          <span>가까운 측정소 {dustStation}</span>
-        </p>
-        <div className="bg-[#f4f4f4] px-1 py-2.5 rounded">
-          {sky !== null &&
-            precipitation !== null &&
-            temperature !== null &&
-            getWeatherText(sky, precipitation, temperature)}
+        <div className={`mt-4 p-4 ${dustGradeClassMap[dustGrade]}`}>
+          <div className="flex justify-between mb-3">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              대기질 정보
+            </span>
+            <span
+              className={`px-3 py-1 rounded-lg text-xs font-medium  ${dustGradeLabelMap[dustGrade]}`}
+            >
+              보통
+            </span>
+          </div>
+          <div className="flex gap-4">
+            <div className="w-1/2">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                미세먼지 (PM10)
+              </div>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                {pm10Value}μg/m³
+              </p>
+            </div>
+            <div className="w-1/2">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                초미세먼지 (PM2.5)
+              </div>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                {pm25Value}μg/m³
+              </p>
+            </div>
+          </div>
         </div>
+        <div className="mt-4 pt-2 text-gray-600 dark:text-gray-400 text-sm">
+          <div className="flex gap-2">
+            <Crosshair width={16} height={16} />
+            <span>현재 위치 : {currentLocation}</span>
+          </div>
+          <div className="flex gap-2 mt-3">
+            <MapPinHouse width={16} height={16} />
+            <span>가까운 측정소 : {dustStation}</span>
+          </div>
+        </div>
+        {/* <div className="mt-4 p-4"></div> */}
       </div>
     </div>
   );
