@@ -9,11 +9,19 @@ import { Plus } from "lucide-react";
 import "@/styles/calendar.css";
 import WeatherOverview from "@/components/home/weatherOverview";
 
-export default function Client() {
+import { Plan } from "@/types/plan";
+
+import TodayTimeline from "@/components/home/todayTimeline";
+
+interface Props {
+  todayPlan: Plan[] | [];
+}
+
+export default function Client({ todayPlan }: Props) {
   return (
-    <div>
+    <div className="py-8">
       <div className="flex justify-between">
-        <div className="flex flex-col">
+        <div className="flex flex-col mb-8">
           <h3 className="text-2xl font-semibold">대시보드</h3>
           <span className="text-sm">오늘의 일정과 목표를 확인하세요</span>
         </div>
@@ -45,7 +53,9 @@ export default function Client() {
           </div>
           <WeatherOverview />
         </div>
-        <></>
+        <div>
+          <TodayTimeline todayPlan={todayPlan} />
+        </div>
         <></>
       </div>
     </div>

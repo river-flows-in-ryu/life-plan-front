@@ -1,5 +1,30 @@
+import { getServerSession } from "next-auth";
+
+import { authOptions } from "./api/auth/[...nextauth]/route";
+
 import Client from "./client";
 
-export default function Home() {
-  return <Client />;
+export default async function Home() {
+  const session = await getServerSession(authOptions);
+
+  const today = new Date();
+
+  const formatteredDate = today.toISOString().slice(0, 10);
+
+  const planFetch = async () => {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/plans?date=${formatteredDate}`,
+      {
+        method: "get",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.user?.accessToken}`,
+        },
+      }
+    );
+    return await res.json();
+  };
+
+  const todayPlan = await planFetch();
+  return <Client todayPlan={todayPlan} />;
 }
