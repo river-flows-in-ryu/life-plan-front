@@ -13,8 +13,6 @@ interface Props {
 }
 
 export default function ActiveGoalProgress({ goals }: Props) {
-  const progressGoals = goals?.slice(0, 3);
-
   return (
     <div className="border rounded-lg p-6">
       <div className="flex justify-between items-center mb-3">
@@ -50,8 +48,8 @@ export default function ActiveGoalProgress({ goals }: Props) {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {progressGoals &&
-            progressGoals?.map((goal) => {
+          {goals &&
+            goals?.map((goal) => {
               const {
                 id,
                 current,

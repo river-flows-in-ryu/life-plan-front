@@ -27,7 +27,7 @@ export default async function Home() {
 
   const goalFetch = async () => {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/goals?state=ongoing`,
+      `${process.env.NEXT_PUBLIC_API_URL}/goals?state=ongoing&limit=3&offset=0`,
       {
         method: "get",
         headers: {
