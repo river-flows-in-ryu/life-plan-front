@@ -55,7 +55,7 @@ export default function TodayTimeline({ todayPlan }: Props) {
       </h3>
 
       {/* 값 없을 시 */}
-      {todayPlan?.length === 0 ? (
+      {todayPlan && todayPlan?.length === 0 ? (
         <div className="py-5">
           <div className="flex flex-col justify-center">
             <div className="w-14 h-14 p-3 bg-gray-100 rounded-full mx-auto mb-3">
@@ -87,63 +87,64 @@ export default function TodayTimeline({ todayPlan }: Props) {
       ) : (
         // 값 있을때
         <div className="flex flex-col gap-4">
-          {todayPlan?.map((plan, index) => {
-            const { id, color, label, start_time, end_time, is_important } =
-              plan;
+          {todayPlan &&
+            todayPlan?.map((plan, index) => {
+              const { id, color, label, start_time, end_time, is_important } =
+                plan;
 
-            const now = dayjs(`2000-01-01T${dayjs().format("HH:mm")}`);
-            const start = dayjs(`2000-01-01T${start_time}`);
-            const end = dayjs(`2000-01-01T${end_time}`);
+              const now = dayjs(`2000-01-01T${dayjs().format("HH:mm")}`);
+              const start = dayjs(`2000-01-01T${start_time}`);
+              const end = dayjs(`2000-01-01T${end_time}`);
 
-            return (
-              <div className="flex" key={id}>
-                <div className="flex flex-col  justify-start items-center">
-                  <div
-                    className={`text-xs font-medium px-2 py-1 rounded-md min-w-[50px] text-center ${
-                      now.isAfter(start)
-                        ? "bg-muted text-muted-foreground"
-                        : "bg-accent text-accent-foreground"
-                    }`}
-                  >
-                    {start_time?.slice(0, 5)}
-                  </div>
-                  {arrayLength !== index + 1 && (
-                    <div className="w-[1px] h-8 bg-border mt-2 ml-6"></div>
-                  )}
-                </div>
-                <div className="ml-3 flex-1">
-                  <div className="w-full flex items-center">
-                    {/* dayjs 객체 비교위해 무의미 2000-01-01 사용  */}
-                    {now?.isAfter(start) ? (
-                      <CircleCheck
-                        className="text-green-400"
-                        width={16}
-                        height={16}
-                      />
-                    ) : (
-                      <Circle width={16} height={16} />
-                    )}
+              return (
+                <div className="flex" key={id}>
+                  <div className="flex flex-col  justify-start items-center">
                     <div
-                      className="w-2 h-2 rounded-full ml-2"
-                      style={{ backgroundColor: color }}
-                    />
-                    <p
-                      className={`max-w-[175px] ml-2 text-sm font-medium truncate flex-1  ${
-                        now?.isAfter(end) ? "line-through" : ""
+                      className={`text-xs font-medium px-2 py-1 rounded-md min-w-[50px] text-center ${
+                        now.isAfter(start)
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-accent text-accent-foreground"
                       }`}
                     >
-                      {label}
-                    </p>
+                      {start_time?.slice(0, 5)}
+                    </div>
+                    {arrayLength !== index + 1 && (
+                      <div className="w-[1px] h-8 bg-border mt-2 ml-6"></div>
+                    )}
                   </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">
-                      {getDiffTime(start_time, end_time)}
-                    </span>
+                  <div className="ml-3 flex-1">
+                    <div className="w-full flex items-center">
+                      {/* dayjs 객체 비교위해 무의미 2000-01-01 사용  */}
+                      {now?.isAfter(start) ? (
+                        <CircleCheck
+                          className="text-green-400"
+                          width={16}
+                          height={16}
+                        />
+                      ) : (
+                        <Circle width={16} height={16} />
+                      )}
+                      <div
+                        className="w-2 h-2 rounded-full ml-2"
+                        style={{ backgroundColor: color }}
+                      />
+                      <p
+                        className={`max-w-[175px] ml-2 text-sm font-medium truncate flex-1  ${
+                          now?.isAfter(end) ? "line-through" : ""
+                        }`}
+                      >
+                        {label}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">
+                        {getDiffTime(start_time, end_time)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       )}
     </div>

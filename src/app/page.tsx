@@ -25,6 +25,21 @@ export default async function Home() {
     return await res.json();
   };
 
+  const goalFetch = async () => {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/goals?state=ongoing`,
+      {
+        method: "get",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.user?.accessToken}`,
+        },
+      }
+    );
+    return await res.json();
+  };
+
   const todayPlan = await planFetch();
-  return <Client todayPlan={todayPlan} />;
+  const userGoal = await goalFetch();
+  return <Client todayPlan={todayPlan} goals={userGoal?.results} />;
 }

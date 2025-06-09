@@ -7,17 +7,20 @@ import Calendar from "react-calendar";
 import { Plus } from "lucide-react";
 
 import "@/styles/calendar.css";
-import WeatherOverview from "@/components/home/weatherOverview";
 
 import { Plan } from "@/types/plan";
+import { Goals } from "@/types/goal";
 
+import WeatherOverview from "@/components/home/weatherOverview";
 import TodayTimeline from "@/components/home/todayTimeline";
+import ActiveGoalProgress from "@/components/home/activeGoalProgress";
 
 interface Props {
   todayPlan: Plan[] | [];
+  goals: Goals[];
 }
 
-export default function Client({ todayPlan }: Props) {
+export default function Client({ todayPlan, goals }: Props) {
   return (
     <div className="py-8">
       <div className="flex justify-between">
@@ -56,7 +59,9 @@ export default function Client({ todayPlan }: Props) {
         <div>
           <TodayTimeline todayPlan={todayPlan} />
         </div>
-        <></>
+        <div>
+          <ActiveGoalProgress goals={goals} />
+        </div>
       </div>
     </div>
   );
