@@ -42,7 +42,11 @@ export default function TodayTimeline({ todayPlan }: Props) {
     if (minutes === 0) {
       return `${String(hours)}시간`;
     } else {
-      return `${String(hours)}시간 ${String(minutes).padStart(2, "0")}분`;
+      if (hours === 0) {
+        return `${String(minutes).padStart(2, "0")}분`;
+      } else {
+        return `${String(hours)}시간 ${String(minutes).padStart(2, "0")}분`;
+      }
     }
   };
 
@@ -115,7 +119,7 @@ export default function TodayTimeline({ todayPlan }: Props) {
                   <div className="ml-3 flex-1">
                     <div className="w-full flex items-center">
                       {/* dayjs 객체 비교위해 무의미 2000-01-01 사용  */}
-                      {now?.isAfter(start) ? (
+                      {now?.isAfter(end) ? (
                         <CircleCheck
                           className="text-green-400"
                           width={16}

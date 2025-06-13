@@ -39,7 +39,28 @@ export default async function Home() {
     return await res.json();
   };
 
+  const categoryTimeFetch = async () => {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/plans/dashboard/category-time/?period=custom&start_date=${formatteredDate}&end_date=${formatteredDate}`,
+      {
+        method: "get",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.user?.accessToken}`,
+        },
+      }
+    );
+    return await res.json();
+  };
+
   const todayPlan = await planFetch();
   const userGoal = await goalFetch();
-  return <Client todayPlan={todayPlan} goals={userGoal?.results} />;
+  const categoryTime = await categoryTimeFetch();
+  return (
+    <Client
+      todayPlan={todayPlan}
+      goals={userGoal?.results}
+      categoryTime={categoryTime}
+    />
+  );
 }
