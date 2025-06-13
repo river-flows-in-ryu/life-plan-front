@@ -1,198 +1,128 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-
-import dayjs from "dayjs";
 import Calendar from "react-calendar";
-import Image from "next/image";
+import Link from "next/link";
+import dayjs from "dayjs";
 
 import { Plus } from "lucide-react";
 
-import { ThermometerSun } from "lucide-react";
-import { Droplets } from "lucide-react";
-import { Wind } from "lucide-react";
-import mask from "../../public/mask.png";
+import "@/styles/customCalendar.css";
 
-import "@/styles/calendar.css";
+import { Plan } from "@/types/plan";
+import { Goals } from "@/types/goal";
 
-type FullRegionName = keyof typeof regionMap;
-type ShortRegionName = (typeof regionMap)[FullRegionName];
+import WeatherOverview from "@/components/home/weatherOverview";
+import TodayTimeline from "@/components/home/todayTimeline";
+import ActiveGoalProgress from "@/components/home/activeGoalProgress";
+import CategoryTimeAnalysis from "@/components/home/categoryTimeAnalysis";
 
-const regionMap = {
-  서울특별시: "서울",
-  부산광역시: "부산",
-  대구광역시: "대구",
-  인천광역시: "인천",
-  광주광역시: "광주",
-  대전광역시: "대전",
-  울산광역시: "울산",
-  경기도: "경기",
-  강원특별자치도: "강원",
-  충청북도: "충북",
-  충청남도: "충남",
-  전북특별자치도: "전북",
-  전라남도: "전남",
-  경상북도: "경북",
-  경상남도: "경남",
-  제주특별자치도: "제주",
-  세종특별자치시: "세종",
-};
+import { Calendar as CalendarIcon, Target, Timer } from "lucide-react";
 
-const dustGradeMap: { [key: number]: string } = {
-  1: "좋음",
-  2: "보통",
-  3: "나쁨",
-  4: "매우나쁨",
-};
+interface Props {
+  todayPlan: Plan[] | [];
+  goals: Goals[];
+  categoryTime: {
+    data: { category__name: string; total_time: number }[];
+    total_minutes: number;
+  };
+}
 
-const dustHexColor: { [key: string]: string } = {
-  1: "#01579b",
-  2: "#2e7d32",
-  3: "#b57d00",
-  4: "#D32F2F",
-};
+const getTotalTime = (array: Plan[] | []) => {
+  const totalMinutes = array.reduce((total: number, range: Plan) => {
+    const today = dayjs().format("YYYY-MM-DD");
+    const start = dayjs(`${today}T${range.start_time}`);
+    const end = dayjs(`${today}T${range.end_time}`);
 
-const skyMap: { [key: string]: string } = {
-  1: "맑음",
-  3: "구름 많음",
-  4: "흐림",
-};
-
-const getShortRegionName = (
-  name: string | undefined
-): ShortRegionName | undefined => {
-  if (name && name in regionMap) {
-    return regionMap[name as FullRegionName];
+    const diff = end.diff(start, "minute");
+    return total + diff;
+  }, 0);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  let result = `${hours} h`;
+  if (minutes > 0) {
+    result += ` ${minutes} m`;
   }
-  return undefined;
+  return result;
 };
 
-const getHour = () => {
-  const now = dayjs();
-  const hour = now.hour();
-  const minute = now.minute();
+const goalSuccessRate = (goals: Goals[]) => {
+  const { totalTarget, totalCurrent } = goals.reduce(
+    (acc, item) => {
+      return {
+        totalTarget: acc.totalTarget + item.target,
+        totalCurrent: acc.totalCurrent + item.current,
+      };
+    },
+    { totalTarget: 0, totalCurrent: 0 }
+  );
 
-  let value;
+  if (totalTarget === 0) return "0%";
 
-  if (minute >= 10) {
-    value = hour;
-  } else {
-    value = hour - 1;
-    if (value < 0) {
-      value = 23;
-    }
-  }
-
-  return String(value).padStart(2, "0") + "00";
+  const rate = (totalCurrent / totalTarget) * 100;
+  const decimal = rate % 1;
+  return decimal === 0 ? `${Math.floor(rate)}` : `${rate.toFixed(1)}`;
 };
 
-export default function Client() {
-  const [precipitation, setPrecipitation] = useState(0); //강수량
-  const [temperature, setTemperature] = useState(0); //기온
-  const [humidity, setHumidity] = useState(0); //습도
-  const [windSpeed, setWindSpeed] = useState(0); //풍속
-  const [sky, setSky] = useState(0);
-  const [pm10Value, setPm10Value] = useState(0); // 미세먼지
-  const [pm10Grade, setPm10Grade] = useState(0); // 미세먼지 등급
-  const [pm25Value, setPm25Value] = useState(0); // 초미세먼지
-  const [pm25Grade, setPm25Grade] = useState(0); // 초미세먼지
+const getTileClassName = ({ date, view }: { date: Date; view: string }) => {
+  if (view !== "month") return null;
 
-  useEffect(() => {
-    const today = dayjs().format("YYYYMMDD");
-    const baseTime = getHour();
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          // 로케이션 to x,y 좌표
-          const locationToXY = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/weather?lat=${position.coords.latitude}&lon=${position.coords.longitude}`
-          );
-          const locationToXYJson = await locationToXY.json();
+  const day = date.getDay();
+  const today = new Date();
+  const isToday =
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate();
 
-          // 초단기실황
-          const ultraSrtNcst = await fetch(
-            `${process.env.NEXT_PUBLIC_WEATHER_API_URL}/getUltraSrtNcst?serviceKey=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${today}&base_time=${baseTime}&nx=${locationToXYJson?.x}&ny=${locationToXYJson?.y}`
-          );
-          const ultraSrtNcstJson = await ultraSrtNcst.json();
+  if (isToday) return "calendar-today";
+  if (day === 0) return "calendar-sunday"; // 일요일
+  if (day === 6) return "calendar-saturday"; // 토요일
 
-          // 초단기예보
-          const ultraSrtFcst = await fetch(
-            `${process.env.NEXT_PUBLIC_WEATHER_API_URL}/getUltraSrtFcst?serviceKey=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${today}&base_time=${baseTime}&nx=${locationToXYJson?.x}&ny=${locationToXYJson?.y}`
-          );
-          const ultraSrtFcstJson = await ultraSrtFcst.json();
+  return "calendar-weekday"; // 평일
+};
 
-          // x,y to 시/도
-          const addressInfo = await fetch(
-            `https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x=${position.coords.longitude}&y=${position.coords.latitude}`,
-            {
-              headers: {
-                Authorization: `KakaoAK ${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}`,
-              },
-            }
-          );
-
-          const addressInfoJson = await addressInfo.json();
-
-          const name = addressInfoJson?.documents[0]?.region_1depth_name;
-
-          // 미세먼지 api
-          const fineDust = await fetch(
-            `${process.env.NEXT_PUBLIC_PARTICULATE_MATTER_API_URL}?serviceKey=${
-              process.env.NEXT_PUBLIC_PARTICULATE_MATTER_API_KEY
-            }&returnType=JSON&numOfRows=10&sidoName=${getShortRegionName(
-              name
-            )}&ver=1.0`
-          );
-
-          const fineDustJson = await fineDust.json();
-
-          //미세먼지 농도와 등급 state
-          setPm10Value(fineDustJson?.response?.body?.items[0]?.pm10Value);
-          setPm10Grade(fineDustJson?.response?.body?.items[0]?.pm10Grade);
-          setPm25Value(fineDustJson?.response?.body?.items[0]?.pm25Value);
-          setPm25Grade(fineDustJson?.response?.body?.items[0]?.pm25Grade);
-
-          // 초단기예보에서 가져온 sky 상태
-          setSky(ultraSrtFcstJson?.response?.body?.items?.item[18]?.fcstValue);
-
-          // 기온 관련 state
-          setPrecipitation(
-            ultraSrtNcstJson?.response?.body?.items?.item[0]?.obsrValue
-          );
-          setTemperature(
-            ultraSrtNcstJson?.response?.body?.items?.item[3]?.obsrValue
-          );
-          setHumidity(
-            ultraSrtNcstJson?.response?.body?.items?.item[1]?.obsrValue
-          );
-          setWindSpeed(
-            ultraSrtNcstJson?.response?.body?.items?.item[7]?.obsrValue
-          );
-        },
-        (error) => {
-          if (error.code === error.PERMISSION_DENIED) {
-            alert("위치 정보 제공에 동의해 주세요.");
-          }
-        }
-      );
-    }
-  }, []);
-
+export default function Client({ todayPlan, goals, categoryTime }: Props) {
   return (
-    <div>
+    <div className="py-8">
       <div className="flex justify-between">
-        <div className="flex flex-col">
+        <div className="flex flex-col mb-8">
           <h3 className="text-2xl font-semibold">대시보드</h3>
           <span className="text-sm">오늘의 일정과 목표를 확인하세요</span>
         </div>
         <button className="h-10 flex items-center gap-2 bg-black px-4 py-2 rounded">
           <Plus color="white" />
-          <span className="text-white">일정추가</span>
+          <Link href="/schedule">
+            <span className="text-white">일정추가</span>
+          </Link>
         </button>
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="p-6 border rounded-lg">
+          <div className="flex justify-between mb-2">
+            <span className=" text-sm font-medium">오늘 일정</span>
+            <CalendarIcon width={16} height={16} />
+          </div>
+          <p className="text-2xl font-bold">{todayPlan?.length || 0} 건</p>
+        </div>
+        <div className="p-6 border rounded-lg">
+          <div className="flex justify-between mb-2">
+            <span className=" text-sm font-medium">목표 달성률</span>
+            <Target width={16} height={16} />
+          </div>
+          <p className="text-2xl font-bold">{goalSuccessRate(goals) || 0} %</p>
+        </div>
+        <div className="p-6 border rounded-lg">
+          <div className="flex justify-between mb-2">
+            <span className=" text-sm font-medium">활동 시간</span>
+            <Timer width={16} height={16} />
+          </div>
+          <p className="text-2xl font-bold">{getTotalTime(todayPlan)}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-6">
         <div>
-          <div className="border rounded-lg">
+          <div className="border rounded-lg hidden sm:block">
             <div className="px-6 pt-6 pb-3">
               <h3 className="font-semibold">미니 캘린더</h3>
             </div>
@@ -200,76 +130,23 @@ export default function Client() {
               locale="ko"
               calendarType="gregory"
               showNeighboringMonth={false}
-              // tileClassName={getTileClassName}
-              // tileContent={tileContent}
-              // onChange={handleDateChange}
+              tileClassName={getTileClassName}
               formatDay={(locale, date) =>
                 date.toLocaleString("en", { day: "numeric" })
               }
-              // onActiveStartDateChange={handleActiveStartDateChange}
+              tileDisabled={() => true}
+              className="custom-calendar-wrapper"
             />
           </div>
-          <div className="mt-6 border rounded-lg">
-            <div className="px-6 pt-6 pb-3 flex items-center gap-2 ">
-              <ThermometerSun className="w-4 h-4" />
-              <h3 className="font-semibold ">오늘의 날씨</h3>
-            </div>
-            <div className="flex justify-evenly p-6 pt-0 ">
-              <div className="flex items-center gap-2">
-                <Droplets className="w-4 h-4 " color="#558bcf" />
-                <div>
-                  <span className="text-xs text-gray-500">습도</span>
-                  <p className="text-sm font-medium">{humidity}%</p>
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <Wind className="w-4 h-4" />
-                  <div>
-                    <span className="text-xs text-gray-500">바람</span>
-                    <p className="text-sm font-medium">{windSpeed}km/h</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-evenly p-6 pt-0 ">
-              <div className="flex items-center gap-2">
-                <Image src={mask} alt="mask_img" width={16} height={16} />
-                <div>
-                  <span className="text-xs text-gray-500">미세먼지</span>
-                  <p className="text-sm font-medium">{pm10Value}μg/m³</p>
-                  <span
-                    style={{ color: dustHexColor[pm10Grade] }}
-                    className="font-bold text-sm"
-                  >
-                    {dustGradeMap[pm10Grade]}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <Image src={mask} alt="mask_img" width={16} height={16} />
-                  <div>
-                    <span className="text-xs text-gray-500">초미세먼지</span>
-                    <p className="text-sm font-medium">{pm25Value}μg/m³</p>
-                    <span
-                      style={{ color: dustHexColor[pm25Grade] }}
-                      className="font-bold text-sm"
-                    >
-                      {dustGradeMap[pm25Grade]}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="p-3 rounded-lg">
-              <span>ㅋㅋ</span>
-              <p>{skyMap[sky]}</p>
-            </div>
-          </div>
+          <WeatherOverview />
         </div>
-        <></>
-        <></>
+        <div>
+          <TodayTimeline todayPlan={todayPlan} />
+        </div>
+        <div>
+          <ActiveGoalProgress goals={goals} />
+          <CategoryTimeAnalysis categoryTime={categoryTime} />
+        </div>
       </div>
     </div>
   );

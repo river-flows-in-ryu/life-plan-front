@@ -10,7 +10,7 @@ export interface Plan {
   description?: string;
   planDetail?: string;
   isImportant?: boolean;
-  im_important?: boolean;
+  is_important?: boolean;
   color: string;
 }
 
