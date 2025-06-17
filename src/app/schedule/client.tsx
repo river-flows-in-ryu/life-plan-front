@@ -141,6 +141,7 @@ export default function Client() {
     data,
     cleanData,
     selectedId,
+    setSelectedId,
     selectedPlan,
     resetSignal,
     setResetSignal,
@@ -195,7 +196,7 @@ export default function Client() {
     if (scheduleDates?.includes(formattedDate)) {
       return (
         <div className="dot-container">
-          <span className="red-dot" />
+          <span className="green-dot" />
         </div>
       );
     }

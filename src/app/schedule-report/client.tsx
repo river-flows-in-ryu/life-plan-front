@@ -25,6 +25,8 @@ import WeeklyUsageAnalysisChart from "@/components/schedule-report/weeklyUsageAn
 import CategoryUsageAnalysisChart from "@/components/schedule-report/categoryUsageAnalysisChart";
 import ImportantPlansComponent from "@/components/schedule-report/importantPlansComponent";
 
+import { getPeriodDateRanges } from "@/lib/utils";
+
 import "../../styles/calendar.css";
 
 import { CategoryData } from "@/types/plan";
@@ -121,7 +123,7 @@ export default function Client() {
 
   const HeaderSection = () => {
     return (
-      <div className="sm:flex sm:justify-between mb-0 sm:mb-6 ">
+      <div className="sm:flex sm:justify-between mb-0 sm:mb-3 ">
         <h1 className="font-bold text-2xl mb-4 sm:mb-0">Lifestyle Dashboard</h1>
         <div className="h-10 p-1 sm:w-[400px] w-full flex bg-[#f3f4f6] sm:mb-0 mb-6">
           {["week", "month", "custom"].map((type) => (
@@ -146,6 +148,9 @@ export default function Client() {
     <div className="p-4 ">
       <Link href="/schedule">일정 추가</Link>
       <HeaderSection />
+      <p className="text-right mb-3 text-gray-500 font-semibold ">
+        {getPeriodDateRanges(periodType as "week" | "month", "current")}
+      </p>
       {periodType === "custom" && (
         <div className="border p-6 mb-6 rounded">
           <Popover>

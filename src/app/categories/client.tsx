@@ -25,6 +25,8 @@ import {
 import Modal from "@/components/modal";
 import CategoryChangeModal from "@/components/modals/categoryChangeModal";
 
+import { getPeriodDateRanges } from "@/lib/utils";
+
 import editImg from "../../../public/edit.png";
 import searchImg from "../../../public/searchImg.png";
 import closeImg from "../../../public/close.png";
@@ -54,7 +56,7 @@ interface Plan {
 
 export default function Client({ categoryData }: Props) {
   const searchParams = useSearchParams();
-  const category = searchParams.get("category");
+  const category = searchParams.get("category") || "운동";
 
   const urlPeriod = searchParams.get("period") || "week";
 
@@ -164,9 +166,9 @@ export default function Client({ categoryData }: Props) {
 
   const HeaderSection = () => {
     return (
-      <div className="sm:flex sm:justify-between mb-0 sm:mb-6 ">
+      <div className="sm:flex sm:justify-between mb-0 sm:mb-3 ">
         <h1 className="font-bold text-2xl mb-4 sm:mb-0">{category} 카테고리</h1>
-        <div className="h-10 p-1 sm:w-[400px] w-full flex bg-[#f3f4f6] sm:mb-0 mb-6">
+        <div className="h-10 p-1 sm:w-[400px] w-full flex bg-[#f3f4f6] sm:mb-0 mb-3">
           {["week", "month", "custom"].map((type) => (
             <button
               key={type}
@@ -400,6 +402,9 @@ export default function Client({ categoryData }: Props) {
         />
       </Modal>
       <HeaderSection />
+      <p className="text-right mb-3 text-gray-500 font-semibold ">
+        {getPeriodDateRanges(periodType as "week" | "month", "current")}
+      </p>
       <div
         className={`p-6 border border-[#e5e7eb] w-full mb-4 ${
           periodType === "custom" ? "inline-block" : "hidden"

@@ -140,8 +140,9 @@ export default function TodayTimeline({ todayPlan }: Props) {
                         {label}
                       </p>
                     </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground">
+                    <div className="mt-1 flex justify-between text-xs text-muted-foreground ">
+                      <span>종료 시간 : {end_time?.slice(0, 5)}</span>
+                      <span className="">
                         {getDiffTime(start_time, end_time)}
                       </span>
                     </div>

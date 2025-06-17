@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
 import React from "react";
 
+import { getPeriodDateRanges } from "@/lib/utils";
+
 import { Plan } from "@/types/plan";
 
 interface Props {
@@ -40,9 +42,17 @@ export default function ImportantPlansComponent({
       className="flex-1 border bg-white p-6 max-h-[350px] overflow-auto flex flex-col
     "
     >
-      <h3 className="text-xl font-bold mb-5">
-        {getSummaryText(periodType, when)}
-      </h3>
+      <div className="flex flex-col text-left items-center mb-5">
+        <h3 className="text-xl font-bold ">
+          {getSummaryText(periodType, when)}
+        </h3>
+        <span className="text-xs">
+          {getPeriodDateRanges(
+            periodType as "week" | "month",
+            when as "current" | "next"
+          )}
+        </span>
+      </div>
       {dataLength ? (
         <ul>
           {data?.map((plan: Plan) => {

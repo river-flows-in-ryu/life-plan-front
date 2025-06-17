@@ -145,14 +145,14 @@
   position: relative;
 }
 
-.red-dot {
+.green-dot {
   position: absolute;
   top: -25px;
   left: 50%;
   transform: translateX(-50%);
   width: 6px;
   height: 6px;
-  background-color: red;
+  background-color: #a8d5a8;
   border-radius: 50%;
 }
 
