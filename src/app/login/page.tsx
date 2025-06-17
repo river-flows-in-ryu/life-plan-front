@@ -18,7 +18,7 @@ export default function Home() {
     setCookie("role", role, { path: "/", maxAge: 3600 });
     signIn(provider, {
       state: role,
-      callbackUrl: `/schedule`,
+      callbackUrl: `/`,
     });
   };
 
@@ -67,7 +67,9 @@ export default function Home() {
           </span>
         </div>
 
-        <button onClick={() => signOut({ redirect: true, callbackUrl: "/" })}>
+        <button
+          onClick={() => signOut({ redirect: true, callbackUrl: "/login" })}
+        >
           로그아웃
         </button>
       </div>
