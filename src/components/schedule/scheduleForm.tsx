@@ -12,6 +12,7 @@ import { Plan } from "@/types/plan";
 
 interface Props {
   selectedId: number | null;
+  setSelectedId: React.Dispatch<React.SetStateAction<number | null>>;
   selectedPlan: any;
   resetSignal: boolean;
   setResetSignal: (val: boolean) => void;
@@ -35,6 +36,7 @@ export default function ScheduleForm({
   data,
   selectedPlan,
   selectedId,
+  setSelectedId,
   resetSignal,
   setResetSignal,
 }: Props) {
@@ -43,7 +45,7 @@ export default function ScheduleForm({
     handleSubmit,
     reset,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<IFormInput>();
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export default function ScheduleForm({
         color: "#ffffff",
         isImportant: false,
       });
+      setSelectedId(null);
       setResetSignal(false);
     }
   }, [resetSignal]);
@@ -314,19 +317,23 @@ export default function ScheduleForm({
         </div>
         <div className="flex gap-2 my-2.5 justify-center">
           {!selectedId && (
-            <button className="bg-[#2564eb] w-full h-10 rounded text-white">
+            <button
+              disabled={isSubmitting}
+              className="bg-[#2564eb] w-full h-10 rounded text-white"
+            >
               Add
             </button>
           )}
           {selectedId && (
             <>
               <button
+                disabled={isSubmitting}
                 className="bg-[#eab208] w-full h-10 rounded text-white"
-                // onClick={handleClickUpdate}
               >
                 Edit
               </button>
               <button
+                type="button"
                 className="bg-red-500 w-full h-10 rounded text-white"
                 onClick={handleClickDelete}
               >
