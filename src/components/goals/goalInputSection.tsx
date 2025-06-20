@@ -43,7 +43,7 @@ export default function GoalInputSection({ categoryData }: Props) {
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
   } = useForm<IFormInput>({
     defaultValues: {
@@ -320,6 +320,7 @@ export default function GoalInputSection({ categoryData }: Props) {
         </div>
         <button
           type="submit"
+          disabled={isSubmitting}
           className="w-full h-10 rounded bg-black text-white mt-6"
         >
           목표 추가
