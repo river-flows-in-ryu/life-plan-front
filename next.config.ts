@@ -31,6 +31,7 @@ const nextConfig: NextConfig = {
   },
   /* config options here */
   reactStrictMode: true,
+  output: "standalone",
 };
 
 export default withPWA(nextConfig);
