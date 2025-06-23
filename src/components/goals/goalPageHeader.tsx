@@ -3,6 +3,7 @@ import React from "react";
 import Image from "next/image";
 
 import trophy from "../../../public/trophy.png";
+import { Target } from "lucide-react";
 
 interface Props {
   badgeCount: number;
@@ -21,8 +22,9 @@ export default function GoalPageHeader({ badgeCount, activeGoals }: Props) {
           <Image src={trophy} alt="flaction_trophy_img" className="w-3 h-3 " />
           <span>획득한 뱃지 : {badgeCount || 0} 개</span>
         </div>
-        <div className="px-2.5 py-1 rounded-full border font-semibold text-sm h-fit">
-          활성 목표 : {activeGoals || 0}개
+        <div className="flex items-center px-2.5 gap-3 py-1 rounded-full border font-semibold text-sm h-fit">
+          <Target width={12} height={12} />
+          <span>활성 목표 : {activeGoals || 0}개</span>
         </div>
       </div>
     </div>

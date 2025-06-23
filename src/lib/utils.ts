@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
 import { clsx, type ClassValue } from "clsx";
 
 import { twMerge } from "tailwind-merge";
@@ -13,11 +14,13 @@ export const getPeriodDateRanges = (
 ) => {
   const today = dayjs();
 
+  dayjs.extend(isoWeek);
+
   if (periodType === "week") {
-    const currentStart = today.startOf("week");
+    const currentStart = today.startOf("isoWeek");
     const start =
       periodPosition === "current" ? currentStart : currentStart.add(1, "week");
-    const end = start.endOf("week");
+    const end = start.endOf("isoWeek");
     return `${start.format("YYYY.MM.DD")} ~ ${end.format("YYYY.MM.DD")}`;
   }
 

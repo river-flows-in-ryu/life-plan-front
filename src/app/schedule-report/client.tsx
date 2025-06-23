@@ -146,7 +146,6 @@ export default function Client() {
 
   return (
     <div className="p-4 ">
-      <Link href="/schedule">일정 추가</Link>
       <HeaderSection />
       <p className="text-right mb-3 text-gray-500 font-semibold ">
         {getPeriodDateRanges(periodType as "week" | "month", "current")}

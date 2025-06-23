@@ -1,9 +1,6 @@
 import Client from "./client";
 
-export default async function Page({}: // searchParams,
-{
-  searchParams: { category?: string };
-}) {
+export default async function Page() {
   async function categoryFetch() {
     try {
       const res = await fetch(

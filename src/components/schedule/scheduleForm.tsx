@@ -82,6 +82,11 @@ export default function ScheduleForm({
     try {
       const { color, endTime, startTime, isImportant, planDetail, planTitle } =
         data;
+
+      if (!isAfterTime(startTime, endTime)) {
+        alert("시작 시간은 종료 시간보다 빨라야 합니다.");
+        return;
+      }
       const formatDate = dayjs(selectedDate).format("YYYY-MM-DD");
       const submitFetch = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/plans/create/`,
@@ -155,6 +160,11 @@ export default function ScheduleForm({
       const formatDate = dayjs(selectedDate).format("YYYY-MM-DD");
       const { color, endTime, startTime, isImportant, planDetail, planTitle } =
         data;
+
+      if (!isAfterTime(startTime, endTime)) {
+        alert("시작 시간은 종료 시간보다 빨라야 합니다.");
+        return;
+      }
 
       const updateFetch = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/plans/${selectedId}/update/`,
@@ -232,6 +242,29 @@ export default function ScheduleForm({
         alert("삭제에 실패하였습니다. 다시 시도해주세요");
       }
     }
+  };
+
+  const isAfterTime = (
+    startTime: string | undefined,
+    endTime: string | undefined
+  ) => {
+    if (!startTime || !endTime) return false;
+
+    const baseDate = "2025-01-01";
+    const parsedStartTime = dayjs(
+      `${baseDate} ${startTime}`,
+      "YYYY-MM-DD HH:mm",
+      true
+    );
+    const parsedEndTime = dayjs(
+      `${baseDate} ${endTime}`,
+      "YYYY-MM-DD HH:mm",
+      true
+    );
+
+    if (!parsedStartTime.isValid() || !parsedEndTime.isValid()) return false;
+
+    return parsedStartTime.isBefore(parsedEndTime);
   };
 
   return (

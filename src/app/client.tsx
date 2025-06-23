@@ -56,7 +56,7 @@ const goalSuccessRate = (goals: Goals[]) => {
     { totalTarget: 0, totalCurrent: 0 }
   );
 
-  if (totalTarget === 0) return "0%";
+  if (totalTarget === 0) return "0";
 
   const rate = (totalCurrent / totalTarget) * 100;
   const decimal = rate % 1;
@@ -82,7 +82,7 @@ const getTileClassName = ({ date, view }: { date: Date; view: string }) => {
 
 export default function Client({ todayPlan, goals, categoryTime }: Props) {
   return (
-    <div className="py-8">
+    <div className="py-8 px-4 sm:px-0">
       <div className="flex justify-between">
         <div className="flex flex-col mb-8">
           <h3 className="text-2xl font-semibold">대시보드</h3>

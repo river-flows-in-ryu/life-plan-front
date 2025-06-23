@@ -216,9 +216,6 @@ export default function Client() {
 
   return (
     <div className=" py-8">
-      <Link href="/schedule-report">
-        <button>리포트 보러가기</button>
-      </Link>
       <h1 className="text-2xl mb-2 font-bold pl-4">일정 관리</h1>
       <div className="flex flex-col sm:flex-row  p-4 gap-4 ">
         <div className="flex flex-col sm:flex-row gap-4" id="capture">

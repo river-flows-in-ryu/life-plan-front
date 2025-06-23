@@ -2,15 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 
-import Image from "next/image";
 import dayjs from "dayjs";
 
 import { ThermometerSun } from "lucide-react";
 import { Droplets } from "lucide-react";
 import { Wind } from "lucide-react";
-import mask from "../../../public/mask.png";
 import { Crosshair } from "lucide-react";
-import { MapPinHouse, Cloud, Sun } from "lucide-react";
+import { MapPinHouse } from "lucide-react";
 
 import {
   dustGradeClassMap,
