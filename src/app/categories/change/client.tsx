@@ -25,8 +25,6 @@ export default function Client({ categoryData }: Props) {
   const startDate = searchParams.get("start");
   const endDate = searchParams.get("end");
 
-  console.log(startDate, endDate);
-
   const urlPeriod = searchParams.get("period") || "week";
 
   const [category, setCategory] = useState<string | null>(

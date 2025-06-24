@@ -90,7 +90,7 @@ export default function TodayTimeline({ todayPlan }: Props) {
         </div>
       ) : (
         // 값 있을때
-        <div className="flex flex-col gap-4">
+        <ul className="flex flex-col gap-4">
           {todayPlan &&
             todayPlan?.map((plan, index) => {
               const { id, color, label, start_time, end_time, is_important } =
@@ -101,7 +101,7 @@ export default function TodayTimeline({ todayPlan }: Props) {
               const end = dayjs(`2000-01-01T${end_time}`);
 
               return (
-                <div className="flex" key={id}>
+                <li className="flex" key={id}>
                   <div className="flex flex-col  justify-start items-center">
                     <div
                       className={`text-xs font-medium px-2 py-1 rounded-md min-w-[50px] text-center ${
@@ -147,10 +147,10 @@ export default function TodayTimeline({ todayPlan }: Props) {
                       </span>
                     </div>
                   </div>
-                </div>
+                </li>
               );
             })}
-        </div>
+        </ul>
       )}
     </div>
   );

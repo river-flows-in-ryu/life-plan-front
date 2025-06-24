@@ -14,7 +14,7 @@ export default function Main({ children }: { children: React.ReactNode }) {
       className={`pl-0  mx-auto mb-[65px] sm:mb-0  
       ${isLoginPage ? "" : "sm:pl-[250px]"}`}
     >
-      <div className="w-[356px] sm:min-w-[1024px]">{children}</div>
+      <div className="w-full sm:w-[1024px]">{children}</div>
     </main>
   );
 }

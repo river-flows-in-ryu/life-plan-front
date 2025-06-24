@@ -13,7 +13,7 @@ export default function Footer() {
   if (pathname === "/login") return null;
   return (
     <footer className="w-full fixed bottom-0 left-0 z-50 block sm:hidden border-t bg-white">
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-5 h-16 text-center">
         {mobileNavigarionItems?.map((item) => {
           const { id, href, label, icon, primary, active } = item;
 

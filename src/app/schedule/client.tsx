@@ -266,7 +266,7 @@ export default function Client() {
               )}
             </div>
             <TimeWheel plans={data} setSelectedId={setSelectedId} />
-            <ul className="pl-5 mt-5">
+            <ul className="pl-5 mt-5 pb-5">
               {data?.map((plan) => {
                 return (
                   <li key={plan?.id} className="flex gap-1 mt-1.5">

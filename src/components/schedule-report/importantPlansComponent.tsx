@@ -37,6 +37,9 @@ export default function ImportantPlansComponent({
   when,
 }: Props) {
   const dataLength = data?.length;
+
+  const isCustomPeriod = periodType === "custom";
+
   return (
     <div
       className="flex-1 border bg-white p-6 max-h-[350px] overflow-auto flex flex-col
@@ -54,7 +57,11 @@ export default function ImportantPlansComponent({
         </span>
       </div>
       {dataLength ? (
-        <ul>
+        <ul
+          className={`${
+            isCustomPeriod ? "grid grid-cols-1 sm:grid-cols-2 gap-5" : "block"
+          }`}
+        >
           {data?.map((plan: Plan) => {
             const {
               color,

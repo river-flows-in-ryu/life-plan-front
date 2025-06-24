@@ -69,6 +69,8 @@ export default function Client({ categoryData }: Props) {
 
   const [sampleData, setSampleData] = useState<SampleData[]>([]);
 
+  const [isPending, setIsPending] = useState(false);
+
   useEffect(() => {
     if (!date?.from || !date?.to) return;
     const start = dayjs(date?.from);
@@ -194,6 +196,8 @@ export default function Client({ categoryData }: Props) {
         (item) => item.name === selectedCategory
       )?.id;
 
+      setIsPending(true);
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/plans/recurring/`,
         {
@@ -220,6 +224,8 @@ export default function Client({ categoryData }: Props) {
       alert(resJson?.message);
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsPending(false);
     }
   };
 
@@ -320,6 +326,7 @@ export default function Client({ categoryData }: Props) {
           <button
             className="w-full sm:w-fit px-4 py-2 border rounded bg-black text-white"
             onClick={postData}
+            disabled={isPending}
           >
             일정 생성 ({sampleData?.length || 0}개)
           </button>

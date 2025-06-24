@@ -1,4 +1,12 @@
-import { Calendar, BarChart, Target, Layers, Home, Plus } from "lucide-react";
+import {
+  Calendar,
+  BarChart,
+  Target,
+  Layers,
+  Home,
+  Plus,
+  FileText,
+} from "lucide-react";
 
 export const navigarionItems = [
   {
@@ -66,9 +74,9 @@ export const mobileNavigarionItems = [
   },
   {
     id: 2,
-    href: "/schedule",
-    label: "일정",
-    icon: <Calendar className="h-5 w-5" />,
+    href: "/schedule-report",
+    label: "리포트",
+    icon: <FileText className="h-5 w-5" />,
   },
   {
     id: 3,

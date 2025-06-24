@@ -31,23 +31,15 @@ export default function ActiveGoalProgress({ goals }: Props) {
               <Target width={32} height={32} />
             </div>
             <p className="mb-1 text-center text-gray-700 font-medium">
-              오늘 일정이 없습니다.
+              작성한 목표가 없습니다.
             </p>
             <p className="text-sm text-gray-500 mb-4 text-center">
               목표를 설정하고 달성해나가는 과정에서 성취감을 느껴보세요.
             </p>
-            <div className="flex flex-wrap gap-2 justify-center ">
-              <Link href="/goals">
-                <button className="gap-1 flex items-center px-4 py-2 text-sm bg-black text-white rounded">
-                  <Plus width={16} height={16} color="white" />
-                  일정 추가하기
-                </button>
-              </Link>
-            </div>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <ul className="flex flex-col gap-4 mb-4">
           {goals &&
             goals?.map((goal) => {
               const {
@@ -60,7 +52,7 @@ export default function ActiveGoalProgress({ goals }: Props) {
                 target,
               } = goal;
               return (
-                <div key={id}>
+                <li key={id}>
                   <p className="text-sm font-medium truncate">{title}</p>
                   <div className="flex justify-between text-xs my-2">
                     <span className="text-muted-foreground">
@@ -72,16 +64,20 @@ export default function ActiveGoalProgress({ goals }: Props) {
                   </div>
                   <Progress value={(current / target) * 100} />
                   <div className="mt-2 flex flex-col gap-1 text-gray-900">
-                    <p className="text-xs text-right">시작일 :{start_date}</p>
-                    <p className="text-xs text-right">목표일 :{end_date}</p>
+                    <p className="text-xs text-right">
+                      시작일 :{start_date?.replaceAll("-", ".")}
+                    </p>
+                    <p className="text-xs text-right">
+                      목표일 :{end_date?.replaceAll("-", ".")}
+                    </p>
                   </div>
-                </div>
+                </li>
               );
             })}
-        </div>
+        </ul>
       )}
       <Link href="/goals">
-        <button className="w-full h-10 flex justify-center border items-center mt-4 rounded text-sm font-medium gap-2">
+        <button className="w-full h-10 flex justify-center border items-center  rounded text-sm font-medium gap-2">
           <Plus width={16} height={16} /> 새 목표 추가
         </button>
       </Link>

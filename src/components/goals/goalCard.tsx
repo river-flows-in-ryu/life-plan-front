@@ -79,7 +79,7 @@ export default function GoalCard({
   return (
     <>
       {data?.length === 0 ? (
-        <div className="py-12 px-4 text-center">
+        <div className="pt-12 pb-0 sm:pb-12 px-4 text-center">
           {goalStatus === "ongoing" ? (
             <EmptyOngoingGoal />
           ) : (
